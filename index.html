@@ -1,0 +1,2974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <link rel="manifest" href="manifest.json">
+<title>StructalGraphOperations с динамическими спиралями по количеству красных узлов</title>
+<!-- В <head> подключаем шрифт -->
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700&display=swap" rel="stylesheet">
+
+<style>
+  body { margin:0; overflow:hidden; background:#111; }
+  canvas { display:block; }
+  #scaleSlider {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 200px;
+    z-index: 10;
+  }
+/* Новый стиль меню */
+#nodeMenu {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(0,30,0,0.7), rgba(0,50,20,0.75), rgba(10,60,10,0.7));
+  padding: 12px 16px;
+  border-radius: 14px; /* увеличено с 10px */
+  color: #fff;
+  pointer-events: auto;
+  display: none;
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: top left;
+  transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.3s ease;
+
+  font-family: 'Exo 2', sans-serif;
+  font-size: 14px;
+  line-height: 1.95;
+  white-space: nowrap;
+
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 0 6px rgba(180,255,180,0.08), inset 0 0 4px rgba(180,255,180,0.03);
+  backdrop-filter: blur(6px);
+  will-change: transform;
+
+}
+
+#nodeMenu #nodeNameInput {
+  font-weight: 700;         
+  text-align: center;       
+  font-size: 15px;          
+  margin-bottom: 12px;
+  background: rgba(0,0,0,0.45);
+  border: 2px solid rgba(180,255,180,0.15);
+  color: #d8ffd8;
+  outline: none;
+  padding: 6px 8px;
+  border-radius: 10px; /* увеличено с 6px */
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 3px rgba(180,255,180,0.15), inset 0 0 2px rgba(180,255,180,0.03);
+  animation: neonPulseInput 2s ease-in-out infinite;
+}
+
+#nodeMenu .menuItem {
+  background: rgba(0,30,0,0.22);
+  padding: 5px 6px;
+  border-radius: 8px; /* увеличено с 4px */
+  margin: 3px 0;
+  box-shadow: 0 0 4px rgba(180,255,180,0.06), inset 0 0 2px rgba(180,255,180,0.02);
+  transition: background 0.2s, box-shadow 0.2s;
+  color: #ccffcc;
+}
+
+#nodeMenu .menuItem:hover {
+  background: rgba(0,40,0,0.3);
+  box-shadow: 0 0 8px rgba(180,255,180,0.12), inset 0 0 3px rgba(180,255,180,0.04);
+}
+
+
+
+
+
+
+/* Главное меню Add Task */
+#addTaskMenu {
+  position: absolute;
+  background: linear-gradient(135deg, rgba(0,30,0,0.9), rgba(0,50,20,0.85), rgba(10,60,10,0.9));
+  padding: 20px 25px;
+  border-radius: 14px;
+  color: #ccffcc;
+  display: none;
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: top left;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  width: 480px;
+  max-width: 95vw;
+  box-shadow: 0 0 8px rgba(180,255,180,0.12), inset 0 0 3px rgba(180,255,180,0.04);
+}
+
+/* Поля ввода текста и textarea */
+#addTaskMenu input[type="text"],
+#addTaskMenu input[type="number"],
+#addTaskMenu input[type="time"],
+#addTaskMenu textarea,
+#addTaskMenu select {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(180,255,180,0.25);
+  background: rgba(0,0,0,0.45);
+  color: #d8ffd8;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* Главные радиокнопки: тип задачи */
+#taskTypeGroup {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: nowrap;
+}
+
+#taskTypeGroup label {
+  white-space: nowrap;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #ccffcc;
+}
+
+/* --- Новый стиль главных радиокнопок --- */
+#taskTypeGroup input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d8ffd8;
+  border-radius: 50%;
+  margin-right: 6px;
+  position: relative;
+  cursor: pointer;
+  vertical-align: middle;
+  background-color: rgba(0,0,0,0.45);
+  transition: all 0.2s ease;
+}
+
+#taskTypeGroup input[type="radio"]:checked::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00ff80;
+}
+
+#taskTypeGroup input[type="radio"]:hover {
+  box-shadow: 0 0 6px #00ff80;
+}
+
+/* Внутренние блоки радиокнопок и чекбоксов */
+#taskSettings label,
+#habitSettings label,
+#meetingSettings label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #ccffcc;
+}
+
+#taskSettings input[type="radio"],
+#taskSettings input[type="checkbox"],
+#habitSettings input[type="radio"],
+#habitSettings input[type="checkbox"],
+#meetingSettings input[type="radio"],
+#meetingSettings input[type="checkbox"] {
+  accent-color: #00ff80;
+}
+
+/* Горизонтальное размещение радиокнопок для времени выполнения */
+#durationGroup {
+  display: flex;
+  flex-wrap: nowrap;   /* одна строка */
+  gap: 14px;
+  margin-top: 6px;
+  margin-bottom: 14px;
+}
+
+
+/* Горизонтальное время дня для привычки и плана */
+#dayTimeGroup {
+  margin-bottom: 14px;
+}
+
+#dayTimeGroup label {
+  display: inline-flex;
+  gap: 5px;
+  font-size: 13px;
+}
+
+/* Горизонтальные дни недели */
+#daysGroup,
+#meetingDaysGroup {
+  margin-bottom: 14px;
+}
+
+#daysGroup label,
+#meetingDaysGroup label {
+  display: inline-flex;
+  gap: 5px;
+  font-size: 13px;
+}
+
+
+/* Кнопки сохранения и отмены */
+#addTaskMenu button {
+  padding: 6px 12px;
+  margin-right: 8px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(0,100,0,0.6);
+  color: #d8ffd8;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+#addTaskMenu button:hover {
+  background: rgba(0,150,0,0.8);
+}
+
+#meetingTimeGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* центр по горизонтали */
+  gap: 12px;
+}
+
+#meetingTimeGroup input[type="date"],
+#meetingTimeGroup input[type="time"] {
+  font-size: 18px;        /* ×2 относительно стандартного */
+  padding: 10px 14px;
+  min-width: 220px;
+  text-align: center;
+
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 6px;
+  color: #ccffcc;
+}
+
+/* ===== Правая колонка задач ===== */
+
+
+  
+
+#nodeTasksWrapper {
+  position: relative;
+  width: 220px;          /* ← ОБЯЗАТЕЛЬНО */
+  flex-shrink: 0;        /* ← ЗАПРЕЩАЕМ СЖАТИЕ */
+  display: flex;
+  flex-direction: column;
+}
+
+  #nodeTasksWrapper {
+  max-height: calc(5 * 56px + 20px); /* 6 задач + стрелка */
+}
+  
+  
+
+/* Основные задачи (первые 6) */
+#nodeTasksMain {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(5 * 56px);
+  overflow: hidden;
+  min-width: 200px;
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+
+/* Небольшой визуальный отступ снизу */
+#nodeTasksMain::after {
+  content: '';
+  display: block;
+  height: 4px;
+}
+
+/* Кнопка раскрытия */
+#tasksToggle {
+  position: absolute;
+  top: 1%;
+  right: -18px;          /* вынос вправо */
+  transform: translateY(-50%);
+
+  cursor: pointer;
+  user-select: none;
+  opacity: 0.6;
+
+  font-size: 14px;
+}
+
+#tasksToggle:hover {
+  opacity: 1;
+}
+
+
+#nodeTasksExtra {
+  position: absolute;
+  top: -137px;                         /* ← старт с самого верха */
+  left: calc(100% + 24px);        /* больше воздуха */
+
+  width: 260px;
+  height: calc(5 * 56px + 20px);  /* ТОЧНО как у левой части */
+  overflow-y: auto;
+
+  display: none;
+
+  background: rgba(15, 35, 20, 0.96);
+  border: 1px solid rgba(120, 255, 160, 0.25);
+
+  /* убираем скругление слева */
+  border-radius: 0 12px 12px 0;
+
+  padding: 10px 12px;
+
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+
+  #nodeTasksExtra::-webkit-scrollbar {
+  width: 8px;
+}
+
+#nodeTasksExtra::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+
+#nodeTasksExtra::-webkit-scrollbar-thumb {
+  background: rgba(120, 255, 160, 0.35);
+  border-radius: 4px;
+}
+
+#nodeTasksExtra::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 255, 160, 0.6);
+}
+
+
+.task-title {
+  width: 150px;              /* фиксированная ширина */
+  height: 22px;              /* ← ВАЖНО */
+  line-height: 22px;         /* ← ВАЖНО */
+
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+
+  transform: translateZ(0);  /* фиксируем слой */
+}
+
+.task-title span {
+  display: inline-block;
+  white-space: nowrap;
+
+  line-height: 22px;         /* ← совпадает */
+  vertical-align: top;       /* ← КЛЮЧЕВО */
+
+  will-change: transform;
+  transform: translate3d(0,0,0);
+}
+
+#taskNodeList {
+  margin-bottom: 14px;
+}
+
+.node-item {
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: rgba(0,30,0,0.25);
+  cursor: pointer;
+  user-select: none;
+}
+
+.node-item:hover {
+  background: rgba(0,50,0,0.35);
+}
+
+.node-item.editing {
+  background: rgba(0,0,0,0.4);
+}
+
+#taskNode {
+  display: none;
+}
+
+#taskNodeDropdown {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+#taskNodeSelected {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0,30,0,0.35);
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid rgba(180,255,180,0.25);
+}
+
+#taskNodeSelected:hover {
+  background: rgba(0,50,0,0.45);
+}
+
+#taskNodeList {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+
+  display: none;
+  max-height: 220px;
+  overflow-y: auto;
+
+  background: rgba(10,30,20,0.95);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+#taskNodeSelected {
+  position: relative;
+  overflow: hidden;
+}
+
+.longpress-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 0%;
+  background: rgba(120, 255, 120, 0.9);
+  transition: width linear;
+  pointer-events: none;
+}
+  
+  
+#taskHistoryPanel {
+  position: fixed;
+  right: 0px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 320px;
+  height: 66vh;
+
+  border-radius: 12px;
+  overflow-y: auto;
+
+  transition: right 0.25s ease, background 0.3s ease;
+
+
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border-left: 2px solid rgba(180,255,180,0.15);
+  border-radius: 18px 0 0 18px;
+
+  box-shadow:
+    0 0 12px rgba(120,255,160,0.12),
+    inset 0 0 6px rgba(180,255,180,0.05);
+
+  color: #ccffcc;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+
+  display: flex;
+  flex-direction: column;
+
+  z-index: 50;
+  transition: right 0.25s ease;
+}
+  
+ /* ===== Заголовок ===== */
+#taskHistoryTitle {
+  font-size: 20px;
+  font-weight: 800;
+  padding: 14px 16px;
+  letter-spacing: 0.5px;
+}
+
+/* ===== Список ===== */
+#taskHistoryList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.task-history-item {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.task-history-time {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.task-history-task {
+  font-size: 13px;
+}
+
+.task-history-node {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* ===== Canvas ===== */
+canvas {
+  pointer-events: none;
+}
+
+/* ===== Кнопки панели (общий стиль) ===== */
+.panel-action-button {
+  margin: 12px;
+  padding: 8px 10px;
+
+  background: rgba(255,255,255,0.08);
+  color: inherit;
+
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 8px;
+
+  font-size: 12px;
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.panel-action-button:hover {
+  background: rgba(255,255,255,0.16);
+}
+
+/* ===== Панель ===== */
+#taskHistoryPanel {
+  color: #ccffcc;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== ЗЕЛЁНАЯ ТЕМА ===== */
+#taskHistoryPanel.theme-green {
+  background: linear-gradient(
+    135deg,
+    rgba(0,30,0,0.7),
+    rgba(0,50,20,0.75),
+    rgba(10,60,10,0.7)
+  );
+  color: #ccffcc;
+}
+
+/* ===== ЖЁЛТАЯ ТЕМА ===== */
+#taskHistoryPanel.theme-yellow {
+  background: linear-gradient(
+    135deg,
+    rgba(60,40,0,0.7),
+    rgba(90,70,10,0.75),
+    rgba(120,90,20,0.7)
+  );
+  color: #fff4cc;
+}
+
+/* ===== ФИОЛЕТОВАЯ ТЕМА ===== */
+#taskHistoryPanel.theme-purple {
+  background: linear-gradient(
+    135deg,
+    rgba(40,0,60,0.7),
+    rgba(70,20,100,0.75),
+    rgba(90,40,130,0.7)
+  );
+  color: #f0e6ff;
+}
+
+/* ===== СИНЯЯ ТЕМА ===== */
+#taskHistoryPanel.theme-blue {
+  background: linear-gradient(
+    135deg,
+    rgba(0,20,60,0.7),
+    rgba(20,50,100,0.75),
+    rgba(30,80,130,0.7)
+  );
+  color: #e6f0ff;
+}
+
+/* ===== СЕРАЯ ТЕМА ===== */
+#taskHistoryPanel.theme-gray {
+  background: linear-gradient(
+    135deg,
+    rgba(40,40,40,0.7),
+    rgba(70,70,70,0.75),
+    rgba(90,90,90,0.7)
+  );
+  color: #f0f0f0;
+}
+
+/* ===== ЧЁРНАЯ ТЕМА ===== */
+#taskHistoryPanel.theme-black {
+  background: linear-gradient(
+    135deg,
+    rgba(0,0,0,0.75),
+    rgba(20,20,20,0.85),
+    rgba(40,40,40,0.75)
+  );
+  color: #eaeaea;
+}
+
+.panel-button-row {
+  display: flex;
+  gap: 10px;
+
+  padding: 0 12px 8px;   /* 👈 меньше снизу */
+  margin-top: 4px;      /* 👈 ближе к кнопке выше */
+}
+
+.panel-button-row .panel-action-button {
+  flex: 1;
+  margin: 0;
+}
+
+
+.panel-button-row .panel-action-button {
+  flex: 1;
+  margin: 0; /* убираем стандартный margin кнопок */
+}
+
+  
+#checkpoint2,
+#checkpointInput2,
+#checkpoint3,
+#checkpointInput3 {
+  display: none;
+}
+
+  
+  
+  
+  
+#nodeLabels {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20; /* ниже меню, выше canvas */
+  display: none;
+}
+
+.node-label {
+  position: absolute;
+  padding: 6px 8px;
+  border-radius: 6px;
+
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: nowrap;
+
+  will-change: transform;
+}
+
+  
+  
+  
+#taskHistoryTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+
+  padding: 8px 12px 10px;
+  margin-bottom: 6px;
+
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.task-history-tab {
+  padding: 4px 10px;
+  border-radius: 999px; /* аккуратные «пилюли» */
+
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+
+  cursor: pointer;
+  user-select: none;
+
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.65);
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.task-history-tab:hover {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+}
+
+.task-history-tab.active {
+  background: rgba(255,255,255,0.22);
+  color: #ffffff;
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.18),
+    inset 0 0 6px rgba(255,255,255,0.12);
+}
+
+/* ===== Вкладка "Все" ===== */
+.task-history-tab-all {
+  width: 100%;
+  justify-content: center;
+
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+
+  margin-bottom: 6px;
+}
+
+  
+/* Контейнер вкладок узлов — СКРЫТ ПО УМОЛЧАНИЮ */
+#taskHistoryNodesTabs {
+  display: none;
+  margin-top: 6px;
+
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ПОКАЗЫВАЕМ ТОЛЬКО КОГДА РАСКРЫТО */
+#taskHistoryTabs.expanded #taskHistoryNodesTabs {
+  display: flex;
+}
+
+  
+
+  
+.task-history-tab-all::after {
+  content: ' ▶';
+  font-size: 10px;
+  opacity: 0.6;
+  margin-left: 6px;
+}
+
+#taskHistoryTabs.expanded .task-history-tab-all::after {
+  content: ' ▼';
+}
+
+  
+  
+  
+</style>
+</head>
+<body>
+  
+  
+<body>
+
+  <div id="nodeLabels"></div>
+
+<input id="scaleSlider" type="range" min="0.5" max="3" step="0.01" value="1">
+
+
+
+
+<div id="addTaskMenu" style="display:none; position:absolute; width:480px;">
+  <input type="text" id="taskName" placeholder="Название задачи"><br>
+
+  <div id="taskTypeGroup">
+    <label><input type="radio" name="taskType" value="задача" checked onchange="showTaskSettings()"> Задача</label>
+    <label><input type="radio" name="taskType" value="привычка" onchange="showTaskSettings()"> Привычка</label>
+    <label><input type="radio" name="taskType" value="встреча" onchange="showTaskSettings()"> Встречи</label>
+    <label><input type="radio" name="taskType" value="план" onchange="showTaskSettings()"> План/Проект</label>
+  </div>
+
+  <div id="taskSettings">
+    <div id="effortGroup">
+      <label><input type="radio" name="effort" value="требует усилий" checked> Нужно сосредоточиться</label>
+      <label><input type="radio" name="effort" value="не требует усилий"> Сделаю на автомте</label>
+    </div>
+
+    <div id="timeGroup">
+      <label><input type="radio" name="time" value="нужно много времени" checked> Это надолго</label>
+      <label><input type="radio" name="time" value="не нужно много времени"> Времени не отнимет</label>
+    </div>
+  </div>
+
+  <div id="habitSettings" style="display:none;">
+    <div id="dayTimeGroup">
+      <label><input type="radio" name="dayTime" value="утро" checked> Утро</label>
+      <label><input type="radio" name="dayTime" value="день"> День</label>
+      <label><input type="radio" name="dayTime" value="вечер"> Вечер</label>
+    </div>
+
+    <div id="daysGroup">
+      <label><input type="checkbox" name="days" value="пн"> Пн</label>
+      <label><input type="checkbox" name="days" value="вт"> Вт</label>
+      <label><input type="checkbox" name="days" value="ср"> Ср</label>
+      <label><input type="checkbox" name="days" value="чт"> Чт</label>
+      <label><input type="checkbox" name="days" value="пт"> Пт</label>
+      <label><input type="checkbox" name="days" value="сб"> Сб</label>
+      <label><input type="checkbox" name="days" value="вс"> Вс</label>
+    </div>
+
+    <div id="durationGroup">
+      <label><input type="radio" name="duration" value="15 минут" checked> 15 мин</label>
+      <label><input type="radio" name="duration" value="30 минут"> 30 мин</label>
+      <label><input type="radio" name="duration" value="1 час"> 1 час</label>
+      <label><input type="radio" name="duration" value="2 часа"> 2 часа</label>
+      <label><input type="radio" name="duration" value="5 часов"> 5 часов</label>
+    </div>
+  </div>
+
+  <div id="meetingSettings" style="display:none;">
+
+    <div id="meetingTimeGroup">
+      <input type="date" id="meetingDate">
+      <input type="time" id="meetingTime">
+      <textarea id="taskComment"></textarea>
+    </div>
+  </div>
+
+<div id="taskNodeDropdown">
+  <div id="taskNodeSelected">Выберите узел</div>
+  <div id="taskNodeList"></div>
+</div>
+
+
+  <button onclick="saveTask()">Сохранить</button>
+  <button onclick="closeAddTaskMenu()">Отмена</button>
+</div>
+
+<!-- Меню узла -->
+<div id="nodeMenu">
+
+  <input id="nodeNameInput" type="text" placeholder="Node name">
+
+  <!-- Контейнер узла -->
+  <div id="nodeContent">
+
+    <!-- Левая колонка: чекпоинты -->
+    <div id="nodeCheckpoints">
+      <div class="checkpointRow">
+        <input type="checkbox" id="checkpoint1">
+        <input type="text" id="checkpointInput1" placeholder="Operation 1">
+      </div>
+
+      <div class="checkpointRow">
+        <input type="checkbox" id="checkpoint2">
+        <input type="text" id="checkpointInput2" placeholder="Operation 2">
+      </div>
+      
+      <div class="checkpointRow">
+        <input type="checkbox" id="checkpoint3">
+        <input type="text" id="checkpointInput3" placeholder="Operation 3">
+      </div>
+    </div>
+
+    <!-- Правая колонка: задачи -->
+    <div id="nodeTasksWrapper">
+
+  <!-- Основные задачи (до 6) -->
+  <div id="nodeTasksMain"></div>
+
+  <!-- Кнопка раскрытия -->
+  <div id="tasksToggle">
+    ▶
+  </div>
+
+  <!-- Скрытые задачи -->
+  <div id="nodeTasksExtra"></div>
+
+</div>
+
+
+  </div>
+</div>
+
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+<script>
+  
+const TASK_HISTORY_KEY = 'taskHistory';
+  
+  
+let activeHistoryNode = 'ALL'; // 👈 ВОТ ЭТА СТРОКА  
+
+  
+  
+  
+
+// ===== Инициализация сцены, камеры, рендерера =====
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x222222);
+const camera = new THREE.PerspectiveCamera(
+    75,                       // угол обзора
+    window.innerWidth / window.innerHeight,
+    0.05,                     // ближняя плоскость (меньше, чтобы линии не исчезали при приближении)
+    2000                      // дальняя плоскость (чтобы линии видны были на дальнем расстоянии)
+);
+camera.position.z = 100;
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// ===== Свет =====
+scene.add(new THREE.AmbientLight(0x444444));
+const pLight = new THREE.PointLight(0xffffff,1);
+pLight.position.set(50,50,50);
+scene.add(pLight);
+
+// ===== CubeTexture =====
+const loader = new THREE.CubeTextureLoader();
+const urls = [
+  'https://threejs.org/examples/textures/cube/Bridge2/posx.jpg',
+  'https://threejs.org/examples/textures/cube/Bridge2/negx.jpg',
+  'https://threejs.org/examples/textures/cube/Bridge2/posy.jpg',
+  'https://threejs.org/examples/textures/cube/Bridge2/negy.jpg',
+  'https://threejs.org/examples/textures/cube/Bridge2/posz.jpg',
+  'https://threejs.org/examples/textures/cube/Bridge2/negz.jpg'
+];
+const cubeTexture = loader.load(urls);
+scene.environment = cubeTexture;
+
+// ===== Группы модели =====
+const modelGroup = new THREE.Group();
+scene.add(modelGroup);
+const graphGroup = new THREE.Group();
+modelGroup.add(graphGroup);
+
+// ===== Сфера =====
+const sphereMat = new THREE.MeshPhysicalMaterial({
+    color: 0x00ffff,
+    transparent: true,
+    opacity: 0.05,
+    roughness: 0.1,
+    metalness: 0.1,
+    side: THREE.BackSide
+});
+const sphereGeo = new THREE.SphereGeometry(1,64,64);
+const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+modelGroup.add(sphereMesh);
+
+const sphereLight = new THREE.PointLight(0x00ffff,0.2,500);
+modelGroup.add(sphereLight);
+
+// ===== Частицы =====
+const particleCount = 150;
+const particles = [];
+const particlePositions = new Float32Array(particleCount * 3);
+const particleColors = new Float32Array(particleCount * 3);
+const particleOpacities = new Float32Array(particleCount);
+
+for(let i=0;i<particleCount;i++){
+    const u = Math.random();
+    const v = Math.random();
+    const theta = u * 2 * Math.PI;
+    const phi = Math.acos(2*v - 1);
+    const r = Math.cbrt(Math.random());
+    const speed = (0.001 + Math.random()*0.002)/10;
+
+    particles.push({
+        theta, phi, r, speed,
+        opacityPhase: Math.random()*Math.PI*2,
+        opacitySpeed: 0.00005 + Math.random()*0.0001,
+        opacityAmplitude: 0.05 + Math.random()*0.15
+    });
+
+    // Начальные позиции
+    particlePositions[i*3] = r*Math.sin(phi)*Math.cos(theta);
+    particlePositions[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+    particlePositions[i*3+2] = r*Math.cos(phi);
+
+    // Случайный цвет
+    const col = new THREE.Color(Math.random(), Math.random(), Math.random());
+    particleColors[i*3] = col.r;
+    particleColors[i*3+1] = col.g;
+    particleColors[i*3+2] = col.b;
+
+    particleOpacities[i] = 0.05;
+}
+
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions,3));
+particleGeo.setAttribute('color', new THREE.BufferAttribute(particleColors,3));
+
+const particleMat = new THREE.PointsMaterial({
+    size: 0.03,
+    transparent: true,
+    vertexColors: true,
+    opacity: 0.5
+});
+
+const particlePoints = new THREE.Points(particleGeo, particleMat);
+modelGroup.add(particlePoints);
+
+let taskHistoryVisible = false;
+
+  function toggleTaskHistoryPanel() {
+  const panel = document.getElementById('taskHistoryPanel');
+  if (!panel) return;
+
+  taskHistoryVisible = !taskHistoryVisible;
+    
+  if (taskHistoryVisible) {
+    loadTaskHistory(); // 👈 ВОТ ЭТА СТРОКА
+  }
+
+  panel.style.right = taskHistoryVisible ? '0' : '-320px';
+}
+
+  
+  
+// ===== Узлы =====
+const nodeGeo = new THREE.SphereGeometry(1,32,32);
+function createNode(x,y,status,link,name='Node', id){
+    const NODE_RADIUS = 1;
+    const colorMap = {Green:0x00cc44, Yellow:0xffcc00, Red:0xcc2222};
+    const mat = new THREE.MeshPhysicalMaterial({
+        color: colorMap[status],
+        transparent:true,
+        transmission:0.8,
+        roughness:0.05,
+        metalness:0.1,
+        ior:1.5,
+        clearcoat:0.4,
+        clearcoatRoughness:0.1,
+        envMap:cubeTexture,
+        envMapIntensity:1.0
+    });
+    const mesh = new THREE.Mesh(nodeGeo, mat);
+    mesh.position.set(x,y,0);
+    mesh.renderOrder = 10;     // ← КЛЮЧ
+    graphGroup.add(mesh);
+
+    const glow = new THREE.PointLight(colorMap[status],0.05,10);
+    glow.position.copy(mesh.position);
+    graphGroup.add(glow);
+
+    // --- HALO как дочерний объект (стеклянный, как большая сфера) ---
+const haloGeo = new THREE.SphereGeometry(1.2, 32, 32);
+const haloMat = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,        // можно менять под статус узла
+    transparent: true,
+    opacity: 0.05,          // начальная прозрачность
+    roughness: 0.1,
+    metalness: 0.1,
+    transmission: 0.3,      // стеклянный эффект
+    ior: 1.5,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.1,
+    envMap: cubeTexture,
+    envMapIntensity: 1.0,
+    side: THREE.DoubleSide
+});
+const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+haloMesh.renderOrder = 12;   // ← ВАЖНО
+haloMesh.userData.isHalo = true; // помечаем, что это HALO
+mesh.add(haloMesh);       // Привязка к узлу
+haloMesh.position.set(0,0,0); // центр относительно узла
+
+
+    const driftPhaseX = Math.random()*Math.PI*2;
+    const driftPhaseY = Math.random()*Math.PI*2;
+    const driftSpeedX = (0.001 + Math.random()*0.001)/6;
+    const driftSpeedY = (0.001 + Math.random()*0.001)/6;
+    const driftRadiusX = 0.02 + Math.random()*0.02;
+    const driftRadiusY = 0.02 + Math.random()*0.02;
+
+    return {
+    id: id,
+    tasks: [],
+    mesh,
+    radius: NODE_RADIUS,
+    glow,
+    halo: haloMesh,
+    status,
+    gravityForce: 1,
+    connectedLines: [],
+    velocity: new THREE.Vector3(0,0,0),
+    link,
+    name,
+    driftPhaseX,
+    driftPhaseY,
+    driftSpeedX,
+    driftSpeedY,
+    driftRadiusX,
+    driftRadiusY,
+    menuActive: false,
+    haloActive: false, // <-- новое свойство
+    lastClickTime: 0,  // <-- для определения двойного клика
+    checkpoints: [
+        {checked:false, text:''},
+        {checked:false, text:''},
+        {checked:false, text:''}
+    ]
+};
+
+}
+
+
+// ===== Создаем узлы =====
+const nodes=[];
+for(let i=0;i<15;i++){
+    const x=(Math.random()-0.5)*40;
+    const y=(Math.random()-0.5)*40;
+    const status=['Green','Yellow','Red'][Math.floor(Math.random()*3)];
+    const link = `obsidian://open?vault=PALADIN&file=StructalGraphOperations/NodeOperations${i+1}`;
+    nodes.push(createNode(x,y,status,link, `Node${i+1}`, `node${i+1}`));
+}
+
+buildHistoryTabs();
+
+  
+  
+// ===== Линии =====
+function createCable(a,b,segments=10){
+    const pts=[];
+    for(let i=0;i<=segments;i++){
+        const t=i/segments;
+        pts.push(new THREE.Vector3().lerpVectors(a.mesh.position,b.mesh.position,t));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    
+    // ===== Скрываем линию, если она проходит через узел =====
+const camPos = camera.position;
+let nearNode = false;
+
+for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+
+    // расстояние от точки линии до камеры
+    const dCam = p.distanceTo(camPos);
+
+    // расстояние до узлов
+    const dA = p.distanceTo(a.mesh.position);
+    const dB = p.distanceTo(b.mesh.position);
+
+    if (
+        (dA < a.mesh.scale.x * 1.1 && dCam > a.mesh.position.distanceTo(camPos)) ||
+        (dB < b.mesh.scale.x * 1.1 && dCam > b.mesh.position.distanceTo(camPos))
+    ) {
+        nearNode = true;
+        break;
+    }
+}
+
+  
+  
+    const mat = new THREE.LineBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.1,
+    depthTest: false,      // проверка глубины выключена
+    depthWrite: false     // линии не "закрывают" другие объекты, всегда видны
+});
+
+    const line = new THREE.Line(geo, mat);
+    line.renderOrder = 1;          // ← ВАЖНО
+    graphGroup.add(line);
+    a.connectedLines.push(line);
+    b.connectedLines.push(line);
+    line.userData = {a,b,segments};
+    return line;
+}
+nodes.forEach((n,i)=>{for(let j=i+1;j<nodes.length;j++) createCable(n,nodes[j]);});
+  
+  
+  
+function updateNodeLabels() {
+  if (!labelsEnabled) return;
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  nodes.forEach(node => {
+    if (!node.label) return;
+
+    const total = node.tasks.length;
+    const done = node.tasks.filter(t => t.completed).length;
+
+    node.label.el.innerHTML = `
+      <b>${node.name}</b><br>
+      ${done} / ${total}
+    `;
+
+    const p = node.mesh.position.clone();
+    p.project(camera);
+
+    const tx = (p.x * 0.5 + 0.5) * w + 18;
+    const ty = (-p.y * 0.5 + 0.5) * h - 18;
+
+    node.label.x += (tx - node.label.x) * 0.12;
+    node.label.y += (ty - node.label.y) * 0.12;
+
+    node.label.el.style.transform =
+      `translate(${node.label.x}px, ${node.label.y}px)`;
+
+    node.label.el.style.display = p.z < 1 ? 'block' : 'none';
+  });
+}
+  
+
+
+// ===== Hover =====
+let hoveredNode = null;
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+window.addEventListener('mousemove', e=>{
+    mouse.x = (e.clientX/window.innerWidth)*2 -1;
+    mouse.y = -(e.clientY/window.innerHeight)*2 +1;
+    raycaster.setFromCamera(mouse,camera);
+    const intersects = raycaster.intersectObjects(nodes.map(n => n.mesh), false)
+        .filter(i => !i.object.userData.isHalo);
+    hoveredNode = intersects.length>0 ? nodes.find(n=>n.mesh===intersects[0].object) : null;
+});
+
+  
+  
+function addTaskHistory(taskName, nodeName) {
+  // 1. Берём историю из localStorage
+  const history = JSON.parse(
+    localStorage.getItem(TASK_HISTORY_KEY) || '[]'
+  );
+
+  // 2. Текущее время
+  const now = new Date();
+  const time = now.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  // 3. Добавляем новую запись в начало
+  history.unshift({
+    time: time,
+    task: taskName,
+    node: nodeName
+  });
+
+  // 4. Сохраняем обратно
+  localStorage.setItem(
+    TASK_HISTORY_KEY,
+    JSON.stringify(history)
+  );
+}
+
+
+  
+  
+  
+function updateNodeTasks(node) {
+  const main = document.getElementById('nodeTasksMain');
+  const extra = document.getElementById('nodeTasksExtra');
+
+  if (!main || !extra) return;
+
+  main.innerHTML = '';
+  extra.innerHTML = '';
+
+  node.tasks.forEach((task, index) => {
+
+    // ===== Чекбокс =====
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = task.completed;
+    checkbox.style.marginRight = '6px';
+
+  checkbox.addEventListener('change', () => {
+
+  const wasCompleted = task.completed; // ← ВАЖНО
+  task.completed = checkbox.checked;
+
+  // 1. Удаляем задачу из текущего места
+  const index = node.tasks.indexOf(task);
+  if (index !== -1) {
+    node.tasks.splice(index, 1);
+  }
+
+  // 2. Если выполнена — в конец, если нет — обратно вверх
+  if (task.completed && !wasCompleted) {
+  addTaskHistory(task.name, node.name);
+  loadTaskHistory(); 
+  node.tasks.push(task);
+}
+
+    
+    
+    
+    else {
+    node.tasks.unshift(task);
+  }
+
+  saveNodesState();
+  updateNodeTasks(node);
+});
+
+
+    // ===== Контейнер задачи =====
+    const taskDiv = document.createElement('div');
+    taskDiv.style.display = 'flex';
+    taskDiv.style.flexDirection = 'column';
+    taskDiv.style.marginBottom = '8px';
+    taskDiv.style.minHeight = '34px';
+
+
+    // ===== Строка заголовка =====
+    const titleRow = document.createElement('div');
+    titleRow.style.display = 'flex';
+    titleRow.style.alignItems = 'flex-start';
+
+    
+    
+    titleRow.style.justifyContent = 'space-between';
+    titleRow.style.height = '22px';      // ← фиксированная высота строки
+    titleRow.style.lineHeight = '22px';  // ← фиксируем baseline
+
+
+
+    const title = document.createElement('div');
+    title.className = 'task-title';
+    title.style.height = '22px';
+    title.style.lineHeight = '22px';
+    title.style.contain = 'layout paint';
+
+
+
+
+const titleSpan = document.createElement('span');
+titleSpan.textContent = task.name;
+
+title.appendChild(titleSpan);
+    
+    let hoverTimer = null;
+let animFrame = null;
+
+title.addEventListener('mouseenter', () => {
+  hoverTimer = setTimeout(() => {
+    const containerWidth = title.clientWidth;
+    const textWidth = titleSpan.scrollWidth;
+
+    if (textWidth <= containerWidth) return;
+
+    let start = null;
+    const distance = textWidth - containerWidth + 10; // запас
+    const duration = 1500; // скорость прокрутки
+
+    function animateScroll(timestamp) {
+      if (!start) start = timestamp;
+      const progress = (timestamp - start) / duration;
+
+      const offset = Math.min(progress, 1) * distance;
+      titleSpan.style.transform = `translate3d(-${offset}px, 0, 0)`;
+
+
+      if (progress < 1) {
+        animFrame = requestAnimationFrame(animateScroll);
+      }
+    }
+
+    animFrame = requestAnimationFrame(animateScroll);
+  }, 900); // ← задержка 2 секунды
+});
+
+title.addEventListener('mouseleave', () => {
+  clearTimeout(hoverTimer);
+  hoverTimer = null;
+
+  if (animFrame) {
+    cancelAnimationFrame(animFrame);
+    animFrame = null;
+  }
+
+  titleSpan.style.transform = 'translateX(0)';
+});
+
+
+    
+    
+    title.style.fontSize = '13px';
+    title.style.color = '#ccffcc';
+
+    if (task.completed) {
+      title.style.textDecoration = 'line-through';
+      title.style.opacity = '0.5';
+    }
+
+    // Левая группа: чекбокс + название
+const leftGroup = document.createElement('div');
+leftGroup.style.display = 'flex';
+leftGroup.style.alignItems = 'center';
+
+leftGroup.appendChild(checkbox);
+leftGroup.appendChild(title);
+
+// Кнопка удаления ✕
+const deleteBtn = document.createElement('span');
+deleteBtn.textContent = '✕';
+deleteBtn.style.cursor = 'pointer';
+deleteBtn.style.opacity = '0.15';
+deleteBtn.style.marginLeft = '8px';
+deleteBtn.style.fontSize = '12px';
+
+deleteBtn.addEventListener('mouseenter', () => {
+  deleteBtn.style.opacity = '0.45';
+});
+deleteBtn.addEventListener('mouseleave', () => {
+  deleteBtn.style.opacity = '0.15';
+});
+
+let deleteTimer = null;
+
+deleteBtn.addEventListener('mousedown', () => {
+  // запускаем таймер удержания
+  deleteTimer = setTimeout(() => {
+    // мягкая анимация удаления
+    taskDiv.style.opacity = '0';
+    taskDiv.style.transform = 'translateX(10px)';
+    taskDiv.style.height = '0';
+    taskDiv.style.marginBottom = '0';
+
+    // удаляем из данных после анимации
+    setTimeout(() => {
+      const index = node.tasks.indexOf(task);
+      if (index !== -1) {
+        node.tasks.splice(index, 1);
+        saveNodesState();
+        updateNodeTasks(node);
+      }
+    }, 250);
+
+  }, 3000); // 3 секунды удержания
+});
+
+deleteBtn.addEventListener('mouseup', () => {
+  clearTimeout(deleteTimer);
+  deleteTimer = null;
+});
+
+deleteBtn.addEventListener('mouseleave', () => {
+  clearTimeout(deleteTimer);
+  deleteTimer = null;
+});
+    
+
+// ===== ИКОНКА ССЫЛКИ 🔗 =====
+const linkIcon = document.createElement('span');
+
+linkIcon.textContent = '🔗';
+linkIcon.style.cursor = 'pointer';
+linkIcon.style.marginLeft = '6px';
+linkIcon.style.fontSize = '13px';
+linkIcon.style.userSelect = 'none';
+linkIcon.style.opacity = task.link ? '0.4' : '0.12';
+
+linkIcon.addEventListener('mouseenter', () => {
+  linkIcon.style.opacity = task.link ? '0.6' : '0.3';
+});
+
+linkIcon.addEventListener('mouseleave', () => {
+  linkIcon.style.opacity = task.link ? '0.4' : '0.12';
+});
+
+let linkPressTimer = null;
+let isEditingLink = false;
+let longPressTriggered = false;
+
+// ===== LONG PRESS =====
+linkIcon.addEventListener('mousedown', e => {
+  e.stopPropagation();
+  if (isEditingLink) return;
+
+  longPressTriggered = false;
+
+  linkPressTimer = setTimeout(() => {
+    longPressTriggered = true;
+    startEditTaskLink();
+  }, 1200);
+});
+
+linkIcon.addEventListener('mouseup', e => {
+  e.stopPropagation();
+  clearTimeout(linkPressTimer);
+});
+
+linkIcon.addEventListener('mouseleave', () => {
+  clearTimeout(linkPressTimer);
+  longPressTriggered = false;
+});
+
+// ===== CLICK =====
+linkIcon.addEventListener('click', e => {
+  e.stopPropagation();
+
+  if (longPressTriggered) {
+    longPressTriggered = false;
+    return;
+  }
+
+  if (task.link) {
+    window.open(task.link, '_blank');
+  }
+});
+
+// ===== РЕДАКТИРОВАНИЕ ССЫЛКИ =====
+function startEditTaskLink() {
+  if (isEditingLink) return;
+  isEditingLink = true;
+
+  linkIcon.style.display = 'none';
+  rightGroup.style.position = 'relative';
+
+
+  const input = document.createElement('input');
+  
+  input.style.position = 'absolute';
+input.style.right = '0';
+input.style.top = '50%';
+input.style.transform = 'translateY(-50%)';
+
+input.style.width = '160px';
+input.style.fontSize = '12px';
+input.style.zIndex = '10';
+
+  
+  input.type = 'text';
+  input.placeholder = 'obsidian://...';
+  input.value = task.link || '';
+  
+  rightGroup.appendChild(input);
+
+
+  
+  input.focus();
+  input.select();
+
+  function finish(save) {
+    if (save) {
+      const value = input.value.trim();
+      task.link = value || null;
+    }
+
+    saveNodesState();
+
+    input.remove();
+    linkIcon.style.display = '';
+    linkIcon.style.opacity = task.link ? '0.4' : '0.12';
+
+    isEditingLink = false;
+  }
+
+  input.addEventListener('blur', () => finish(true));
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') input.blur();
+    if (e.key === 'Escape') finish(false);
+  });
+}
+
+
+
+
+// ФИНАЛЬНАЯ СБОРКА titleRow ⬇⬇⬇
+const rightGroup = document.createElement('div');
+rightGroup.style.display = 'flex';
+rightGroup.style.alignItems = 'center';
+
+rightGroup.appendChild(linkIcon);
+rightGroup.appendChild(deleteBtn);
+
+titleRow.appendChild(leftGroup);
+titleRow.appendChild(rightGroup);
+
+
+    taskDiv.appendChild(titleRow);
+
+    // ===== Мета-информация (в одну строку) =====
+    const metaParts = [];
+
+    if (task.date) metaParts.push(task.date);
+    if (task.meetingTime) metaParts.push(task.meetingTime);
+    if (task.difficulty) metaParts.push(task.difficulty);
+    if (task.dayTime) metaParts.push(task.dayTime);
+    if (task.days && task.days.length > 0) metaParts.push(task.days.join('·'));
+    if (task.duration) metaParts.push(task.duration);
+
+    if (metaParts.length > 0) {
+      const meta = document.createElement('div');
+      meta.textContent = metaParts.join(' · ');
+      meta.style.fontSize = '11px';
+      meta.style.opacity = '0.6';
+      meta.style.marginLeft = '22px';
+      taskDiv.appendChild(meta);
+    }
+
+    // ===== Комментарий (отдельной строкой, если нужен) =====
+    if (task.comment) {
+      const comment = document.createElement('div');
+      comment.textContent = task.comment;
+      comment.style.fontSize = '11px';
+      comment.style.opacity = '0.5';
+      comment.style.marginLeft = '22px';
+      taskDiv.appendChild(comment);
+    }
+
+    // ===== РАЗДЕЛЕНИЕ: первые 6 → main, остальные → extra =====
+    if (index < 6) {
+      main.appendChild(taskDiv);
+    } else {
+      extra.appendChild(taskDiv);
+    }
+
+  });
+}
+
+
+  
+// ===== UI меню =====
+const menuDiv = document.getElementById('nodeMenu');
+const nodeNameInput = document.getElementById('nodeNameInput');
+
+// Текущий узел, для которого открыто меню
+let currentMenuNode = null;
+
+// ===== Обновление полей меню из данных узла =====
+function updateMenuFields() {
+    if (!currentMenuNode) return;
+
+    nodeNameInput.value = currentMenuNode.name;
+
+    for (let i = 0; i < 3; i++) {
+        const checkbox = document.getElementById('checkpoint' + (i + 1));
+        const input = document.getElementById('checkpointInput' + (i + 1));
+        checkbox.checked = currentMenuNode.checkpoints[i].checked;
+        input.value = currentMenuNode.checkpoints[i].text;
+    }
+}
+  
+  
+  
+let selectedTaskNodeId = null;
+  
+
+  
+
+// ===== События изменения чекпоинтов и текстов =====
+for (let i = 0; i < 3; i++) {
+    // Захватываем индекс через IIFE, чтобы не было замыкания
+    ((index) => {
+        const checkbox = document.getElementById('checkpoint' + (index + 1));
+        const input = document.getElementById('checkpointInput' + (index + 1));
+
+        checkbox.addEventListener('change', (e) => {
+            if (currentMenuNode) {
+                currentMenuNode.checkpoints[index].checked = e.target.checked;
+                saveNodesState(); // <-- добавляем сюда
+            }
+        });
+
+        input.addEventListener('input', (e) => {
+            if (currentMenuNode) {
+                currentMenuNode.checkpoints[index].text = e.target.value;
+                saveNodesState(); // <-- добавляем сюда
+            }
+        });
+    })(i);
+}
+
+// ===== Обновление позиции меню =====
+function updateMenuPosition(node, menuDiv) {
+    const localOffset = new THREE.Vector3(0, 4, 0);
+    const worldPos = node.mesh.getWorldPosition(new THREE.Vector3()).add(localOffset);
+    const pos = worldPos.clone().project(camera);
+
+    let targetX = (pos.x + 1) / 2 * window.innerWidth;
+    let targetY = (-pos.y + 1) / 2 * window.innerHeight;
+
+    let currentX = parseFloat(menuDiv.dataset.x) || targetX;
+    let currentY = parseFloat(menuDiv.dataset.y) || targetY;
+    const smooth = 0.15;
+    currentX += (targetX - currentX) * smooth;
+    currentY += (targetY - currentY) * smooth;
+
+
+
+    menuDiv.style.left = currentX + 'px';
+    menuDiv.style.top = currentY + 'px';
+
+    menuDiv.dataset.x = currentX;
+    menuDiv.dataset.y = currentY;
+}
+
+// ===== Открытие / закрытие меню =====
+window.addEventListener('mousedown', event => {
+    if (event.button === 1) { // колесо мыши
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(nodes.map(n => n.mesh), false)
+            .filter(i => !i.object.userData.isHalo);
+
+        if (intersects.length > 0) {
+            const clickedNode = nodes.find(n => n.mesh === intersects[0].object);
+
+            if (currentMenuNode === clickedNode) {
+                // Закрываем меню
+                currentMenuNode.menuActive = false;
+                currentMenuNode = null;
+                menuDiv.style.opacity = '0';
+                setTimeout(() => menuDiv.style.display = 'none', 250);
+            } else {
+    // ❗ СБРАСЫВАЕМ предыдущий узел
+    if (currentMenuNode) {
+        currentMenuNode.menuActive = false;
+    }
+
+    // Открываем меню на новом узле
+    currentMenuNode = clickedNode;
+    clickedNode.menuActive = true;
+                menuDiv.style.display = 'block';
+                menuDiv.style.opacity = '1';
+                menuDiv.style.transform = 'scale(1)';
+                menuDiv.classList.add('active');
+
+                menuDiv.dataset.x = '';
+                menuDiv.dataset.y = '';
+                updateMenuFields(); // заполняем поля для выбранного узла
+                updateNodeTasks(currentMenuNode);
+            }
+        } else {
+            // Клик вне узла — закрываем меню
+            if (currentMenuNode) currentMenuNode.menuActive = false;
+            currentMenuNode = null;
+            menuDiv.style.opacity = '0';
+menuDiv.style.transform = 'scale(0.96)';
+menuDiv.classList.remove('active');
+setTimeout(() => menuDiv.style.display = 'none', 250);
+
+
+        }
+    }
+});
+
+// ===== Обновление меню на каждый кадр =====
+function updateMenuPositionAndFields() {
+    if (currentMenuNode) {
+        updateMenuPosition(currentMenuNode, menuDiv);
+        updateMenuFields();
+    }
+}
+
+// ===== Редактирование имени узла =====
+nodeNameInput.addEventListener('input', () => {
+    if (currentMenuNode) {
+        currentMenuNode.name = nodeNameInput.value;
+    }
+});
+
+
+// ===== Счет красных узлов =====
+function countRedNodes(){ return nodes.filter(n => n.status==='Red').length; }
+
+// ===== Центр и масштаб графа, сфера =====
+let currentSphereRadius = 10;
+let targetSphereRadius = 10;
+
+function updateGraphAndSphere(time){
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    nodes.forEach(n=>{
+        const p = n.mesh.position;
+        if(p.x<minX) minX=p.x; if(p.x>maxX) maxX=p.x;
+        if(p.y<minY) minY=p.y; if(p.y>maxY) maxY=p.y;
+    });
+    const centerX = (minX+maxX)/2;
+    const centerY = (minY+maxY)/2;
+    graphGroup.position.set(-centerX, -centerY, 0);
+    const graphWidth = maxX-minX;
+    const graphHeight = maxY-minY;
+    const graphMax = Math.max(graphWidth, graphHeight);
+    const scale = graphMax>0 ? 40/graphMax : 1;
+    const baseSphereRadius = Math.max(graphWidth,graphHeight)/2 * 1.1 * scale;
+    const redCount = countRedNodes();
+    const redRatio = redCount/nodes.length;
+    const redFactor = redRatio>0.5 ? 1 + redRatio : 1;
+    targetSphereRadius = baseSphereRadius * redFactor;
+    currentSphereRadius = THREE.MathUtils.lerp(currentSphereRadius, targetSphereRadius, 0.02);
+    sphereMesh.scale.set(currentSphereRadius,currentSphereRadius,currentSphereRadius);
+    sphereMesh.position.set(0,0,0);
+    sphereLight.position.set(0,0,0);
+// Усиление на 10–20%
+const intensity = (0.15 + 0.05 * Math.sin(time*0.005/3)) * 1.1;
+sphereLight.intensity = intensity;
+sphereMesh.material.opacity = (0.03 + 0.02 * Math.sin(time*0.005/3)) * 2.9;
+
+    return currentSphereRadius;
+}
+
+// ===== Спирали =====
+const spiralBezelGroup = new THREE.Group();
+modelGroup.add(spiralBezelGroup);
+const spiralLayers = 4;
+const spiralLines = [];
+for(let layer=0; layer<spiralLayers; layer++){
+    const redCount = countRedNodes();
+const redRatio = redCount / nodes.length; // 0..1
+
+const spiralTurns = 3 + layer + Math.floor(redRatio * 5); // чем больше красных узлов, тем больше витков
+const spiralSegments = 120 + Math.floor(redRatio * 60); // увеличиваем детализацию при росте красных узлов
+const radiusOffset = 1 + layer*0.2 + redRatio * 0.5; // спираль «раздувается» с ростом красных узлов
+  
+    const rotationSpeed = 0.001 + layer*0.0015;
+    for(let t=0; t<spiralTurns; t++){
+        const points = [];
+        for(let i=0;i<=spiralSegments;i++){
+            const angle = (i/spiralSegments)*Math.PI*2 + t*Math.PI/spiralTurns;
+            const z = (i/spiralSegments - 0.5) * 2;
+            points.push(new THREE.Vector3(Math.cos(angle)*radiusOffset, Math.sin(angle)*radiusOffset, z));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+      
+        const mat = new THREE.LineBasicMaterial({
+  color: 0x00ffff,
+  transparent: true,
+  opacity: 0.125,
+  depthTest: false,     // ← КЛЮЧ №1
+  depthWrite: false
+});
+
+const line = new THREE.Line(geo, mat);
+line.renderOrder = 2;   // ← КЛЮЧ №2 (выше граф-линий, ниже узлов)
+spiralBezelGroup.add(line);
+
+
+        spiralLines.push({line, phase: Math.random()*Math.PI*2, rotationSpeed});
+    }
+}
+
+// ===== Анимация =====
+function animate(time=0){
+    requestAnimationFrame(animate);
+
+    nodes.forEach(n=>{
+    // Базовые цвета узлов (насыщенные)
+const baseColors = {Green:0x00cc44, Yellow:0xffcc00, Red:0xcc2222};
+n.mesh.material.color.set(baseColors[n.status]);
+
+// Плавное мерцание внутреннего свечения (emissive)
+const pulse = 0.01 + 0.01 * Math.sin(time * 0.0005 + n.mesh.id); // медленная анимация
+n.mesh.material.emissive = new THREE.Color(baseColors[n.status]).lerp(new THREE.Color(0xffff33), pulse);
+n.mesh.material.emissiveIntensity = 0.4 + 0.2 * Math.sin(time * 0.008 + n.mesh.id);
+
+// Можно слегка менять прозрачность для эффекта стеклянной лампочки
+const baseOpacity = 0.7;
+n.mesh.material.opacity = THREE.MathUtils.lerp(n.mesh.material.opacity, baseOpacity + 0.1 * Math.sin(time * 0.006 + n.mesh.id), 0.05);
+
+
+    // --- Анимация размера ---
+    const targetScale = (n.menuActive || n === hoveredNode) ? 1.2 : 1;
+    n.mesh.scale.lerp(new THREE.Vector3(targetScale,targetScale,targetScale), 0.1);
+
+    // --- HALO ---
+// --- Анимация HALO ---
+const haloBaseScale = 1.001; // базовый размер HALO относительно узла
+const haloActiveMultiplier = n.haloActive ? 1.3 : 1; // увеличение при двойном клике
+const haloTargetScale = n.mesh.scale.x * haloBaseScale * haloActiveMultiplier;
+
+// Плавно изменяем масштаб HALO
+n.halo.scale.lerp(new THREE.Vector3(haloTargetScale, haloTargetScale, haloTargetScale), 0.001);
+
+// Прозрачность HALO
+const haloTargetOpacity = n.haloActive ? 0.15 : 0; // держится, если активен
+n.halo.material.opacity = THREE.MathUtils.lerp(n.halo.material.opacity, haloTargetOpacity, 0.1);
+
+
+
+    // --- Glow (оставляем как есть) ---
+   const baseIntensity = 0.05;
+const baseDistance = 10;
+let targetIntensity = baseIntensity;
+let targetDistance = baseDistance;
+if (n === hoveredNode) { targetIntensity = 0.15; targetDistance = 15; }
+if (n.menuActive) { targetIntensity = Math.max(targetIntensity,0.35); targetDistance = Math.max(targetDistance,25); }
+// Усиление Glow на ~10%
+n.glow.intensity = THREE.MathUtils.lerp(n.glow.intensity, targetIntensity * 1.1, 0.1);
+n.glow.distance = THREE.MathUtils.lerp(n.glow.distance, targetDistance, 0.1);
+
+});
+
+
+    const sphereRadius = updateGraphAndSphere(time);
+
+    nodes.forEach(n=>{
+        nodes.forEach(other=>{
+            if(n===other) return;
+            const dir = new THREE.Vector3().subVectors(n.mesh.position,other.mesh.position);
+            const dist = dir.length();
+            if(dist===0) return;
+            const repulse = 0.1/dist; 
+            dir.normalize().multiplyScalar(repulse);
+            n.velocity.add(dir);
+        });
+
+        n.connectedLines.forEach(line=>{
+            const other = line.userData.a===n?line.userData.b:line.userData.a;
+            const dir = new THREE.Vector3().subVectors(n.mesh.position,other.mesh.position);
+            const force = (n.status==='Red'?0.01:0.0025)*n.gravityForce; 
+            dir.normalize().multiplyScalar(force);
+            n.velocity.sub(dir);
+            other.velocity.add(dir);
+        });
+
+        n.mesh.position.add(n.velocity);
+        n.velocity.multiplyScalar(0.9); 
+        n.driftPhaseX += n.driftSpeedX;
+        n.driftPhaseY += n.driftSpeedY;
+        n.mesh.position.x += Math.cos(n.driftPhaseX) * n.driftRadiusX;
+        n.mesh.position.y += Math.sin(n.driftPhaseY) * n.driftRadiusY;
+        n.glow.position.copy(n.mesh.position);
+    });
+
+nodes.forEach(node => {
+    node.connectedLines.forEach(line => {
+        const {a, b, segments} = line.userData;
+        const pts = [];
+const rA = a.radius * 1.05;
+const rB = b.radius * 1.05;
+
+
+for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const p = new THREE.Vector3().lerpVectors(a.mesh.position, b.mesh.position, t);
+    const sag = Math.sin(Math.PI * t) * 0.5;
+    p.y -= sag;
+
+    // ❌ НЕ добавляем точки, которые внутри сферы узла
+    if (
+        p.distanceTo(a.mesh.position) < rA ||
+        p.distanceTo(b.mesh.position) < rB
+    ) {
+        continue;
+    }
+
+    pts.push(p);
+}
+      
+  if (pts.length >= 2) {
+    line.geometry.setFromPoints(pts);
+}
+
+
+line.geometry.setFromPoints(pts);
+
+      
+        // ===== Проверка: линия проходит через узел =====
+const camPos = camera.position;
+let nearNode = false;
+
+for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+
+    const dCam = p.distanceTo(camPos);
+    const dA = p.distanceTo(a.mesh.position);
+    const dB = p.distanceTo(b.mesh.position);
+
+    if (
+        (dA < a.mesh.scale.x * 1.05 && dCam > a.mesh.position.distanceTo(camPos)) ||
+        (dB < b.mesh.scale.x * 1.05 && dCam > b.mesh.position.distanceTo(camPos))
+    ) {
+        nearNode = true;
+        break;
+    }
+}
+
+
+        // Цвет линии по статусу узлов
+        const statuses = [a.status, b.status];
+        if (statuses.includes('Red')) line.material.color.set(0xcc2222);
+        else if (statuses.includes('Yellow')) line.material.color.set(0xffcc00);
+        else line.material.color.set(0x00cc44);
+
+        // ===== Мерцание + затухание линии возле узлов =====
+if (line.userData.phase === undefined)
+    line.userData.phase = Math.random() * Math.PI * 2;
+
+const pulseSpeed = 0.005;
+const baseOpacity = 0.08;
+const pulseAmplitude = 0.04;
+
+line.material.opacity =
+    (baseOpacity + pulseAmplitude * Math.sin(time * pulseSpeed + line.userData.phase)) * 1.1;
+
+line.userData.phase += 0.001;
+
+    });
+});
+
+
+    // ===== Спирали =====
+    const redCount = countRedNodes();
+    const redRatio = Math.min(redCount/nodes.length,1);
+spiralBezelGroup.scale.set(
+    sphereRadius * (1 + redRatio * 0.2),
+    sphereRadius * (1 + redRatio * 0.2),
+    sphereRadius * (1 + redRatio * 0.2)
+);
+    spiralLines.forEach(obj=>{
+        obj.line.rotation.z += obj.rotationSpeed / 2; 
+        obj.phase += 0.01; 
+        const startColor = new THREE.Color(0x00ffff);
+        const midColor = new THREE.Color(0x33ccff);
+        const alertColor = new THREE.Color(0xff4444);
+        let color = startColor.clone().lerp(midColor, redRatio);
+        if(redRatio>0.7) color.lerp(alertColor, (redRatio-0.7)/0.3);
+        obj.line.material.color.set(color);
+        obj.line.material.opacity = (0.1 + 0.05*Math.sin(obj.phase)) * 0.8;
+    });
+
+    // ===== Частицы =====
+    const positions = particleGeo.attributes.position.array;
+for(let i=0;i<particles.length;i++){
+    const p = particles[i];
+    p.theta += p.speed;
+    p.phi += p.speed*0.5;
+    const rMax = 0.95 * sphereRadius * (1 + 0.05*Math.sin(time*0.002));
+    positions[i*3] = p.r*rMax*Math.sin(p.phi)*Math.cos(p.theta);
+    positions[i*3+1] = p.r*rMax*Math.sin(p.phi)*Math.sin(p.theta);
+    positions[i*3+2] = p.r*rMax*Math.cos(p.phi);
+}
+particleGeo.attributes.position.needsUpdate = true;
+
+
+// ===== Обновление позиции меню =====
+if (currentMenuNode) {
+    updateMenuPosition(currentMenuNode, menuDiv);
+
+    // ===== Пульс меню по статусу узла =====
+    const pulse = 0.05 * Math.sin(Date.now() * 0.005);
+    const baseGlow = 0.15;
+    let color;
+
+    switch (currentMenuNode.status) {
+        case 'Green': color = '0,204,68'; break;
+        case 'Yellow': color = '255,204,0'; break;
+        case 'Red': color = '204,34,34'; break;
+    }
+
+    menuDiv.style.boxShadow = `
+        0 0 ${12 + pulse*12}px rgba(${color},${baseGlow + pulse}),
+        inset 0 0 ${6 + pulse*6}px rgba(${color},${baseGlow + pulse*0.5})
+    `;
+}
+    renderer.render(scene,camera);
+
+    
+}
+animate();
+// ===== Клик и масштаб =====
+
+window.addEventListener('mousedown', event=>{
+    raycaster.setFromCamera(mouse,camera);
+    const intersects = raycaster.intersectObjects(nodes.map(n => n.mesh), false)
+        .filter(i => !i.object.userData.isHalo);
+    if(intersects.length===0) {
+    // Нет пересечения с узлами
+    if(event.button === 2){ // ПКМ
+        const now = performance.now();
+        if(!window.lastContextMenuClickTime) window.lastContextMenuClickTime = 0;
+        if(now - window.lastContextMenuClickTime < 300){ // двойной ПКМ
+            // открыть наше меню задач
+            openSideMenu(event.clientX, event.clientY);
+            window.lastContextMenuClickTime = 0;
+        } else {
+            window.lastContextMenuClickTime = now;
+        }
+    }
+    return; // чтобы не выполнялись остальные условия
+}
+    const clickedNode = nodes.find(n=>n.mesh===intersects[0].object);
+
+    if(event.button===0){
+        // Левый клик открывает ссылку
+      /*
+        window.on(clickedNode.link,"_blank");
+        */
+    } else if(event.button===2){
+        // Правый клик меняет статус
+        clickedNode.status = clickedNode.status==='Green'?'Yellow':clickedNode.status==='Yellow'?'Red':'Green';
+        saveNodesState();
+    } else if(event.button===1){
+        // Средний клик: двойной клик включает/выключает HALO
+        const now = performance.now();
+        if(now - clickedNode.lastClickTime < 300){ // 300 мс для двойного клика
+            clickedNode.haloActive = !clickedNode.haloActive;
+            clickedNode.lastClickTime = 0;
+        } else {
+            clickedNode.lastClickTime = now;
+        }
+    }
+});
+
+
+
+window.addEventListener('wheel', event => {
+    camera.position.z += event.deltaY * 0.05;
+    camera.position.z = Math.min(Math.max(camera.position.z, 5), 1000);
+});
+
+
+window.addEventListener('resize',()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+});
+
+window.addEventListener('contextmenu',e=>e.preventDefault());
+
+// ===== Ползунок глобального масштаба =====
+const scaleSlider = document.getElementById('scaleSlider');
+scaleSlider.addEventListener('input', () => {
+    const scaleValue = parseFloat(scaleSlider.value);
+    modelGroup.scale.set(scaleValue, scaleValue, scaleValue);
+});
+  
+  
+  
+  
+const labelsContainer = document.getElementById('nodeLabels');
+let labelsEnabled = false;
+
+function createNodeLabel(node) {
+  const el = document.createElement('div');
+  el.className = 'node-label';
+  labelsContainer.appendChild(el);
+
+  node.label = {
+    el,
+    x: 0,
+    y: 0
+  };
+}
+
+  
+  
+  
+// ======== Сохранение состояния узлов (имя, статус, чекпоинты, тексты) ========
+function saveNodesState() {
+  const data = nodes.map(n => ({
+    id: n.id,
+    name: n.name,
+    status: n.status,
+    checkpoints: n.checkpoints,
+    tasks: n.tasks
+  }));
+  localStorage.setItem('graphNodesState', JSON.stringify(data));
+}
+
+function loadNodesState() {
+  const data = JSON.parse(localStorage.getItem('graphNodesState') || '[]');
+
+  data.forEach(savedNode => {
+    const node = nodes.find(n => n.id === savedNode.id);
+    if(!node) return;
+
+    node.name = savedNode.name ?? node.name;
+    node.status = savedNode.status ?? node.status;
+    node.checkpoints = savedNode.checkpoints ?? node.checkpoints;
+    node.tasks = savedNode.tasks ?? [];
+  });
+}
+
+  
+// Загружаем состояние при старте
+
+  
+function loadTaskHistory() {
+  const list = document.getElementById('taskHistoryList');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  const history = JSON.parse(
+    localStorage.getItem(TASK_HISTORY_KEY) || '[]'
+  );
+
+  history
+    .filter(item =>
+      activeHistoryNode === 'ALL' || item.node === activeHistoryNode
+    )
+    .forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'task-history-item';
+
+      row.innerHTML = `
+        <div class="task-history-time">${item.time}</div>
+        <div class="task-history-task">${item.task}</div>
+        <div class="task-history-node">${item.node}</div>
+      `;
+
+      list.appendChild(row);
+    });
+}
+
+
+  
+  
+loadNodesState();
+loadTaskHistory();
+
+document.addEventListener('DOMContentLoaded', () => {
+  
+  
+// ===== Загрузка данных при старте =====
+loadNodesState();
+loadTaskHistory();
+buildHistoryTabs();
+
+  
+// ===== Темы панели =====
+const themes = [
+  'theme-green',
+  'theme-yellow',
+  'theme-purple',
+  'theme-blue',
+  'theme-gray',
+  'theme-black'
+];
+
+const panel = document.getElementById('taskHistoryPanel');
+const toggleThemeBtn = document.getElementById('toggleTheme');
+
+if (panel) {
+  const savedTheme = localStorage.getItem('taskHistoryTheme');
+  const initialTheme = themes.includes(savedTheme)
+    ? savedTheme
+    : themes[0];
+
+  panel.classList.add(initialTheme);
+  localStorage.setItem('taskHistoryTheme', initialTheme);
+}
+
+if (toggleThemeBtn && panel) {
+  toggleThemeBtn.addEventListener('click', () => {
+
+    const currentTheme = localStorage.getItem('taskHistoryTheme');
+    const currentIndex = themes.indexOf(currentTheme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    const nextTheme = themes[nextIndex];
+
+    themes.forEach(t => panel.classList.remove(t));
+    panel.classList.add(nextTheme);
+
+    localStorage.setItem('taskHistoryTheme', nextTheme);
+  });
+}
+
+  
+  
+  
+
+  // ===== Удалить последнюю запись (Undo) =====
+  const deleteHistoryBtn = document.getElementById('deleteLastHistory');
+
+  if (deleteHistoryBtn) {
+    deleteHistoryBtn.addEventListener('click', () => {
+      const history = JSON.parse(
+        localStorage.getItem(TASK_HISTORY_KEY) || '[]'
+      );
+
+      if (history.length === 0) return;
+
+      history.shift();
+
+      localStorage.setItem(
+        TASK_HISTORY_KEY,
+        JSON.stringify(history)
+      );
+
+      loadTaskHistory();
+    });
+  }
+
+  // ===== Экспорт бекапа =====
+  const exportBtn = document.getElementById('exportBackup');
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+
+      const backup = {};
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        backup[key] = localStorage.getItem(key);
+      }
+
+      const blob = new Blob(
+        [JSON.stringify(backup, null, 2)],
+        { type: 'application/json' }
+      );
+
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'graph-backup.json';
+      a.click();
+
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  // ===== Импорт бекапа =====
+  const importBtn = document.getElementById('importBackup');
+  const fileInput = document.getElementById('backupFileInput');
+
+  if (importBtn && fileInput) {
+
+    importBtn.addEventListener('click', () => {
+      fileInput.value = '';
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+
+          localStorage.clear();
+
+          for (const key in data) {
+            localStorage.setItem(key, data[key]);
+          }
+
+          alert('Бекап загружен. Страница будет перезагружена.');
+          location.reload();
+
+        } catch (e) {
+          alert('Ошибка: файл бекапа повреждён');
+        }
+      };
+
+      reader.readAsText(file);
+      
+      
+    });
+  }
+
+});
+
+  
+
+
+  
+
+// Сохраняем при изменении статуса через правый клик
+window.addEventListener('mousedown', event => {
+    if(event.button === 2){ // правый клик
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(nodes.map(n => n.mesh));
+        if(intersects.length === 0) return;
+        const clickedNode = nodes.find(n => n.mesh === intersects[0].object);
+        clickedNode.status = clickedNode.status==='Green' ? 'Yellow' : clickedNode.status==='Yellow' ? 'Red' : 'Green';
+        saveNodesState();
+    }
+});
+
+// Сохраняем при изменении имени через input
+nodeNameInput.addEventListener('input', () => {
+    if(currentMenuNode){
+        currentMenuNode.name = nodeNameInput.value;
+        saveNodesState();
+    }
+});
+
+
+
+// ===== Функция открытия меню Add Task =====
+function openAddTaskMenu(x, y) {
+    const menu = document.getElementById('addTaskMenu');
+    menu.style.display = 'block';
+    menu.style.opacity = '1';
+    menu.style.left = `${x - menu.offsetWidth / 2}px`;
+    menu.style.top = `${y - menu.offsetHeight / 2}px`;
+
+    // Очищаем поля внутри меню
+    const inputs = menu.querySelectorAll('input');
+    inputs.forEach(input => {
+        if (input.type === 'checkbox' || input.type === 'radio') {
+            input.checked = false;
+        } else {
+            input.value = '';
+        }
+    });
+
+    showTaskSettings(); // показываем блоки по выбранной радиокнопке
+}
+
+
+// ===== Массив узлов графа =====
+const graphNodes = [
+    { id: 'node1', name: 'Семья' },
+    { id: 'node2', name: 'Здоровье' },
+    { id: 'node3', name: 'Работа' },
+    { id: 'node4', name: 'Привычки' },
+    { id: 'node5', name: 'Порядок' },
+    { id: 'node6', name: 'Бизнес' },
+    { id: 'node7', name: 'Долги' },
+    { id: 'node8', name: 'Друзья' },
+    { id: 'node9', name: 'Чтение' },
+    { id: 'node10', name: 'Навыки' },
+    { id: 'node11', name: 'Знания' },
+    { id: 'node12', name: "3DProject's" },
+    { id: 'node13', name: 'Путешествия' },
+    { id: 'node14', name: 'Творчество' },
+    { id: 'node15', name: 'Намерения' }
+];
+  
+// === Синхронизация graphNodes с реальными узлами ===
+graphNodes.forEach(gNode => {
+  const realNode = nodes.find(n => n.id === gNode.id);
+  if (realNode && realNode.name) {
+    gNode.name = realNode.name;
+  }
+});
+
+// UI обновляем ТОЛЬКО после синхронизации
+renderTaskNodeList();
+  
+function startRenameSelectedNode() {
+  
+    // ⛔ жёстко останавливаем любые pending long-press
+  if (renameTimer) {
+    clearTimeout(renameTimer);
+    renameTimer = null;
+  }
+
+  longPressTriggered = false;
+
+  if (isRenamingNode) return;
+  isRenamingNode = true;
+  
+  
+  
+  longPressBar.style.transition = 'none';
+  longPressBar.style.width = '0%';
+
+  
+const node = graphNodes.find(n => n.id === selectedTaskNodeId);
+if (!node) {
+  isRenamingNode = false;   // ⬅ ОБЯЗАТЕЛЬНО
+  return;
+}
+
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  
+  input.style.position = 'absolute';
+  input.style.right = '0';
+  input.style.top = '50%';
+  input.style.transform = 'translateY(-50%)';
+
+  input.style.width = '160px';
+  input.style.fontSize = '12px';
+  input.style.zIndex = '10';
+
+  
+  input.value = node.name;
+  input.style.width = '100%';
+  input.style.boxSizing = 'border-box';
+
+  selectedLabel.textContent = '';
+  selectedLabel.appendChild(input);
+  selectedLabel.appendChild(longPressBar); // ⬅ ВАЖНО
+
+  function save() {
+  const newName = input.value.trim();
+  if (!newName) {
+    selectedLabel.textContent = node.name;
+    return;
+  }
+
+  node.name = newName;
+
+  const realNode = nodes.find(n => n.id === node.id);
+  if (realNode) realNode.name = newName;
+
+  saveNodesState();
+  selectedLabel.textContent = newName;
+  renderTaskNodeList();
+}
+
+  
+  input.focus();
+  input.addEventListener('blur', () => {
+  save();
+  isRenamingNode = false; // ⬅ ВАЖНО
+  longPressTriggered = false;
+
+  if (renameTimer) {
+    clearTimeout(renameTimer);
+    renameTimer = null;
+    }
+});
+
+  input.select();
+
+  function save() {
+    const newName = input.value.trim();
+    if (!newName) {
+      selectedLabel.textContent = node.name;
+      return;
+    }
+
+    node.name = newName;
+
+    const realNode = nodes.find(n => n.id === node.id);
+    if (realNode) realNode.name = newName;
+
+    saveNodesState();
+    selectedLabel.textContent = newName;
+    renderTaskNodeList();
+  }
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') input.blur();
+
+  if (e.key === 'Escape') {
+    selectedLabel.textContent = node.name;
+    isRenamingNode = false; // ⬅ ОБЯЗАТЕЛЬНО
+  }
+});
+
+}
+
+
+
+  
+  
+function renderTaskNodeList() {
+  const list = document.getElementById('taskNodeList');
+  list.innerHTML = '';
+
+  graphNodes.forEach(node => {
+    const item = document.createElement('div');
+    item.className = 'node-item';
+    item.textContent = node.name;
+    item.dataset.id = node.id;
+
+item.addEventListener('click', () => {
+
+  // ⛔ ПОЛНЫЙ СБРОС rename-состояния
+  if (renameTimer) {
+    clearTimeout(renameTimer);
+    renameTimer = null;
+  }
+
+  isRenamingNode = false;
+  longPressTriggered = false;
+
+  longPressBar.style.transition = 'none';
+  longPressBar.style.width = '0%';
+
+  // ✅ теперь безопасно менять выбранный узел
+  selectedTaskNodeId = node.id;
+
+  selectedLabel.textContent = node.name;
+  list.style.display = 'none';
+
+  document.querySelectorAll('.node-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === node.id);
+  });
+});
+
+    list.appendChild(item);
+  });
+}
+
+
+renderTaskNodeList();
+  
+
+
+
+  
+  
+const tasks = [];
+
+
+
+// Закрытие Add Task
+function closeAddTaskMenu() {
+  const menu = document.getElementById('addTaskMenu');
+  menu.style.display = 'none';
+}
+
+// Показ настроек
+function showTaskSettings() {
+  const taskType = document.querySelector('input[name="taskType"]:checked')?.value;
+  document.getElementById('taskSettings').style.display = (taskType==='задача')?'block':'none';
+  document.getElementById('habitSettings').style.display = (taskType==='привычка'||taskType==='план')?'block':'none';
+  document.getElementById('meetingSettings').style.display = (taskType==='встреча')?'block':'none';
+}
+
+// Сохранение задачи
+function saveTask() {
+  const taskName = document.getElementById('taskName').value;
+  const taskType = document.querySelector('input[name="taskType"]:checked')?.value;
+  const node = selectedTaskNodeId;
+
+  if(!taskName){ alert("Введите название задачи!"); return; }
+  if(!node){ alert("Выберите узел!"); return; }
+
+  let taskData = {
+  name: taskName,
+  type: taskType,
+  node: node,
+  completed: false,
+  link: null // ⬅ ССЫЛКА НА OBSIDIAN
+};
+
+
+
+  if(taskType==='задача'){
+    taskData.effort = document.querySelector('input[name="effort"]:checked')?.value;
+    taskData.time = document.querySelector('input[name="time"]:checked')?.value;
+  } // ===== Определяем сложность задачи =====
+  if(taskType === 'задача'){
+  const effort = taskData.effort === 'требует усилий';
+  const time = taskData.time === 'нужно много времени';
+
+  if(!effort && !time){
+    taskData.difficulty = 'лёгкая';
+  } else if(effort && time){
+    taskData.difficulty = 'сложная';
+  } else {
+    taskData.difficulty = 'средняя';
+  }
+}
+
+    else if(taskType==='привычка'||taskType==='план'){
+    taskData.dayTime = document.querySelector('input[name="dayTime"]:checked')?.value;
+    taskData.days = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(d=>d.value);
+    taskData.duration = document.querySelector('input[name="duration"]:checked')?.value;
+      
+  } else if(taskType === 'встреча'){
+  taskData.date = document.getElementById('meetingDate')?.value;
+  taskData.meetingTime = document.getElementById('meetingTime')?.value;
+  taskData.comment = document.getElementById('taskComment')?.value;
+}
+
+
+const nodeObj = nodes.find(n => n.id === node);
+if (nodeObj) {
+  // новая задача всегда сверху
+  nodeObj.tasks.unshift(taskData);
+  saveNodesState();
+}
+
+  if(currentMenuNode){
+  updateNodeTasks(currentMenuNode);
+}
+  closeAddTaskMenu();
+}
+
+// Добавление задачи в меню узла
+function addTaskToNodeMenu(taskName, nodeId){
+  const tasksList = document.getElementById('nodeTasksList');
+  if(!tasksList) return;
+
+  const taskItem = document.createElement('div');
+  taskItem.textContent = taskName;
+  taskItem.style.padding = '2px 0';
+  taskItem.style.fontSize = '13px';
+  taskItem.style.color = '#ccffcc';
+
+  tasksList.appendChild(taskItem);
+}
+
+// Предотвращаем клики внутри меню
+function preventMenuClick(menuId){
+  const menu = document.getElementById(menuId);
+  ['mousedown','mouseup','click'].forEach(evt=>{
+    menu.addEventListener(evt,e=>e.stopPropagation());
+  });
+}
+
+preventMenuClick('addTaskMenu');
+preventMenuClick('nodeMenu');
+
+// Открытие Add Task по Enter, закрытие по Escape
+window.addEventListener('keydown', (event)=>{
+  if(event.key==="Enter"){
+    openAddTaskMenu(window.innerWidth/2, window.innerHeight/2);
+  } else if(event.key==="Escape"){
+    closeAddTaskMenu();
+  }
+});
+  
+  
+  const toggle = document.getElementById('tasksToggle');
+const extra = document.getElementById('nodeTasksExtra');
+
+if (toggle && extra) {
+  toggle.addEventListener('click', () => {
+    const opened = extra.style.display === 'block';
+
+    extra.style.display = opened ? 'none' : 'block';
+    toggle.textContent = opened ? '▶' : '◀';
+  });
+}
+  
+
+const dropdown = document.getElementById('taskNodeDropdown');
+const selectedLabel = document.getElementById('taskNodeSelected');
+const longPressBar = document.createElement('div');
+longPressBar.className = 'longpress-progress';
+selectedLabel.appendChild(longPressBar);
+  
+
+const list = document.getElementById('taskNodeList');
+  
+let renameTimer = null;
+let isRenamingNode = false;
+let longPressTriggered = false;
+
+
+
+selectedLabel.addEventListener('mousedown', () => {
+  if (!selectedTaskNodeId) return;
+  if (isRenamingNode) return;
+  if (renameTimer) return; // ⬅ ВАЖНО
+
+
+  longPressBar.style.transition = 'none';
+  longPressBar.style.width = '0%';
+
+  // даём браузеру применить 0%
+  requestAnimationFrame(() => {
+    longPressBar.style.transition = 'width 3s linear';
+    longPressBar.style.width = '100%';
+  });
+
+renameTimer = setTimeout(() => {
+  longPressTriggered = true;   // ⬅ КЛЮЧЕВО
+  startRenameSelectedNode();
+}, 3000);
+  
+});
+
+
+
+
+
+document.addEventListener('mouseup', () => {
+  clearTimeout(renameTimer);
+  renameTimer = null;
+
+  longPressBar.style.transition = 'none';
+  longPressBar.style.width = '0%';
+
+  // ⬅ сбрасываем ФЛАГ ПОСЛЕ полного цикла
+  setTimeout(() => {
+    longPressTriggered = false;
+  }, 0);
+});
+
+
+  
+selectedLabel.textContent = 'Выберите узел';
+
+
+selectedLabel.addEventListener('click', () => {
+  if (longPressTriggered) {
+    longPressTriggered = false; // сбрасываем
+    return; // ⛔ не открываем dropdown
+  }
+
+  const opened = list.style.display === 'block';
+  list.style.display = opened ? 'none' : 'block';
+});
+
+  
+document.addEventListener('mousedown', e => {
+  if (longPressTriggered) return; // ⬅ защита
+
+  if (!dropdown.contains(e.target)) {
+    list.style.display = 'none';
+  }
+});
+
+  let lastRightSideClickTime = 0;
+
+window.addEventListener('mousedown', e => {
+  if (e.button !== 0) return; // только ЛКМ
+
+  // правая часть экрана (30%)
+  if (e.clientX < window.innerWidth * 0.7) return;
+
+  const now = performance.now();
+
+  if (now - lastRightSideClickTime < 300) {
+    toggleTaskHistoryPanel();
+    lastRightSideClickTime = 0;
+  } else {
+    lastRightSideClickTime = now;
+  }
+});
+
+  
+  
+  
+  const deleteBtn = document.getElementById('deleteLastHistory');
+
+if (deleteBtn) {
+  deleteBtn.addEventListener('click', () => {
+
+    const history = JSON.parse(
+      localStorage.getItem(TASK_HISTORY_KEY) || '[]'
+    );
+
+    if (history.length === 0) return; // нечего удалять
+
+    history.shift(); // ⬅ удаляем ПОСЛЕДНЮЮ добавленную запись
+
+    localStorage.setItem(
+      TASK_HISTORY_KEY,
+      JSON.stringify(history)
+    );
+
+    loadTaskHistory(); // обновляем боковое меню
+  });
+}
+
+  
+function buildHistoryTabs() {
+  const tabs = document.getElementById('taskHistoryTabs');
+  if (!tabs) return;
+
+  tabs.innerHTML = '';
+
+  // ===== Кнопка "Все" =====
+  const allTab = document.createElement('div');
+  allTab.textContent = 'Все';
+  allTab.className = 'task-history-tab task-history-tab-all active';
+  tabs.appendChild(allTab);
+
+ allTab.onclick = () => {
+  const tabs = document.getElementById('taskHistoryTabs');
+
+  // переключаем раскрытие
+  tabs.classList.toggle('expanded');
+
+  // логика "Все"
+  activeHistoryNode = 'ALL';
+  updateActiveTab();
+  loadTaskHistory();
+};
+
+
+  // ===== Контейнер для вкладок узлов =====
+  const nodesContainer = document.createElement('div');
+  nodesContainer.id = 'taskHistoryNodesTabs';
+  tabs.appendChild(nodesContainer);
+
+  // ===== Вкладки узлов =====
+  nodes.forEach(node => {
+    const tab = document.createElement('div');
+    tab.textContent = node.name;
+    tab.className = 'task-history-tab';
+
+    tab.onclick = () => {
+      activeHistoryNode = node.name;
+      updateActiveTab();
+      loadTaskHistory();
+    };
+
+    nodesContainer.appendChild(tab);
+  });
+}
+
+
+  
+
+  
+  
+function updateActiveTab() {
+  document.querySelectorAll('.task-history-tab')
+    .forEach(tab => {
+      tab.classList.toggle(
+        'active',
+        tab.textContent === (activeHistoryNode === 'ALL' ? 'Все' : activeHistoryNode)
+      );
+    });
+}
+
+  
+  
+  
+ 
+</script>
+  
+  <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+  
+<div id="taskHistoryPanel">
+  <div id="taskHistoryTabs"></div>
+  <div id="taskHistoryTitle">Завершённые задачи</div>
+
+  <div id="taskHistoryList"></div>
+  
+  <button id="deleteLastHistory" class="panel-action-button">
+  Удалить последнюю запись
+</button>
+
+<div class="panel-button-row">
+  <button id="exportBackup" class="panel-action-button">
+    Экспорт
+  </button>
+
+  <button id="importBackup" class="panel-action-button">
+    Импорт
+  </button>
+</div>
+<button id="toggleTheme" class="panel-action-button">
+  Сменить тему
+</button>
+
+
+
+</div>
+
+  
+</body>
+</html>
