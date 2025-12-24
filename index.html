@@ -1160,6 +1160,16 @@ buildHistoryTabs();
 
   
   
+// ===== Автообновление статусов узлов по времени =====
+setInterval(() => {
+  nodes.forEach(node => {
+    updateNodeStatusByTasks(node);
+    applyNodeColor(node);
+  });
+}, 1000);
+  
+
+  
 // ===== Линии =====
 function createCable(a,b,segments=10){
     const pts=[];
@@ -1903,13 +1913,11 @@ function animate(time=0){
     requestAnimationFrame(animate);
 
     nodes.forEach(n=>{
-    // Базовые цвета узлов (насыщенные)
-const baseColors = {Green:0x00cc44, Yellow:0xffcc00, Red:0xcc2222};
-n.mesh.material.color.set(baseColors[n.status]);
 
 // Плавное мерцание внутреннего свечения (emissive)
 const pulse = 0.01 + 0.01 * Math.sin(time * 0.0005 + n.mesh.id); // медленная анимация
-n.mesh.material.emissive = new THREE.Color(baseColors[n.status]).lerp(new THREE.Color(0xffff33), pulse);
+            
+      
 n.mesh.material.emissiveIntensity = 0.4 + 0.2 * Math.sin(time * 0.008 + n.mesh.id);
 
 // Можно слегка менять прозрачность для эффекта стеклянной лампочки
@@ -2249,7 +2257,25 @@ function loadNodesState() {
   });
 }
 
+  
+console.log(
+  'TASKS SNAPSHOT:',
+  nodes.map(n => ({
+    node: n.id,
+    tasks: n.tasks
+  }))
+);
 
+
+
+setInterval(() => {
+  nodes.forEach(node => {
+    updateNodeStatusByTasks(node);
+    applyNodeColor(node);
+  });
+}, 1000);
+
+  
   
 function updateNodeStatusByTasks(node) {
   if (!Array.isArray(node.tasks) || node.tasks.length === 0) {
@@ -2257,9 +2283,61 @@ function updateNodeStatusByTasks(node) {
     return;
   }
 
+  // 🔴 1. Проверка срочных задач (время / встреча)
+  const hasUrgent = node.tasks.some(
+    t => !t.completed && isTaskUrgentNow(t)
+  );
+
+  if (hasUrgent) {
+    node.status = 'Red';
+    return;
+  }
+
+  // 🟡 2. Обычные незавершённые задачи
   const hasUnfinished = node.tasks.some(t => !t.completed);
   node.status = hasUnfinished ? 'Yellow' : 'Green';
 }
+
+  
+  
+
+function isTaskUrgentNow(task) {
+  if (task.completed) return false;
+
+  const now = new Date();
+  const hour = now.getHours();
+
+  // ===== 🔴 ВСТРЕЧА =====
+  if (task.type === 'встреча' && task.meetingTime) {
+    const [h, m] = task.meetingTime.split(':').map(Number);
+    const meeting = new Date();
+    meeting.setHours(h, m, 0, 0);
+
+    const diffHours = (meeting - now) / (1000 * 60 * 60);
+    return diffHours > 0 && diffHours <= 3;
+  }
+
+  // ===== 🔴 ПЕРИОД ДНЯ =====
+  if (task.dayTime) {
+    if (task.dayTime === 'утро') {
+      return hour >= 3 && hour < 9;
+    }
+    if (task.dayTime === 'день') {
+      return hour >= 9 && hour < 15;
+    }
+    if (task.dayTime === 'вечер') {
+      return hour >= 15 && hour < 21;
+    }
+  }
+
+  return false;
+}
+
+
+  
+  
+  
+  
 
 function applyNodeColor(node) {
   const colorMap = {
@@ -2274,6 +2352,24 @@ function applyNodeColor(node) {
   }
 }
 
+  
+  
+function debugNode(node) {
+  console.log(
+    node.tasks.map(t => ({
+      name: t.name,
+      urgent: isTaskUrgentNow(t),
+      type: t.type,
+      dayTime: t.dayTime,
+      datetime: t.datetime
+    }))
+  );
+}
+ 
+
+
+  
+  
   
 // Загружаем состояние при старте
 
