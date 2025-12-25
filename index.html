@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
   <link rel="manifest" href="manifest.json">
-<title>StructalGraphOperations с динамическими спиралями по количеству красных узлов</title>
+<title>SystemGraph</title>
 <!-- В <head> подключаем шрифт -->
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@500;700&display=swap" rel="stylesheet">
 
@@ -344,7 +344,7 @@
 }
 
 
-  #nodeTasksExtra::-webkit-scrollbar {
+#nodeTasksExtra::-webkit-scrollbar {
   width: 8px;
 }
 
@@ -474,7 +474,6 @@
   border-radius: 12px;
   overflow-y: auto;
 
-  transition: right 0.25s ease, background 0.3s ease;
 
 
 
@@ -489,40 +488,67 @@
     inset 0 0 6px rgba(180,255,180,0.05);
 
   color: #ccffcc;
-  font-family: 'Exo 2', sans-serif;
-  font-size: 12px;
+  font-family: 'Exo 2', sans-serif; 
+  font-size: 22px;
+  
+  
+  
 
   display: flex;
   flex-direction: column;
+  
 
   z-index: 50;
-  transition: right 0.25s ease;
+
+  /* СТАРТОВО СКРЫТА */
+  transform: translate(100%, -50%);
+
+  transition: transform 0.25s ease;
+}
+  
+  #taskHistoryPanel.visible {
+  transform: translate(0, -50%);
+}
+
+#taskHistoryPanel .completed-title {
+  padding-left: 25px;
+}  
+  
+  
+#taskHistoryPanel > div:nth-child(2) {
+  padding-left: 40px;
+}
+
+  
+
 }
   
  /* ===== Заголовок ===== */
 #taskHistoryTitle {
-  font-size: 20px;
+  font-size: 2px;
   font-weight: 800;
   padding: 14px 16px;
   letter-spacing: 0.5px;
+  padding-left: 16px;
+
 }
 
 /* ===== Список ===== */
 #taskHistoryList {
   flex: 1;
   overflow-y: auto;
-  padding: 14px 16px;
+  padding: 14px 20px;
 }
 
 .task-history-item {
-  margin-bottom: 10px;
+  margin-bottom: 11px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .task-history-time {
   font-size: 11px;
-  opacity: 0.55;
+  opacity: 0.25;
 }
 
 .task-history-task {
@@ -531,7 +557,7 @@
 
 .task-history-node {
   font-size: 11px;
-  opacity: 0.7;
+  opacity: 0.25;
 }
 
 /* ===== Canvas ===== */
@@ -580,46 +606,34 @@ canvas {
 
 /* ===== ЖЁЛТАЯ ТЕМА ===== */
 #taskHistoryPanel.theme-yellow {
-  background: linear-gradient(
-    135deg,
-    rgba(60,40,0,0.7),
-    rgba(90,70,10,0.75),
-    rgba(120,90,20,0.7)
-  );
-  color: #fff4cc;
+  background: rgba(255, 255, 140, 0.07);
+  box-shadow:
+    0 0 14px rgba(255, 255, 140, 0.12),
+    inset 0 0 8px rgba(255, 255, 140, 0.05);
 }
 
 /* ===== ФИОЛЕТОВАЯ ТЕМА ===== */
 #taskHistoryPanel.theme-purple {
-  background: linear-gradient(
-    135deg,
-    rgba(40,0,60,0.7),
-    rgba(70,20,100,0.75),
-    rgba(90,40,130,0.7)
-  );
-  color: #f0e6ff;
+  background: rgba(180, 120, 255, 0.07);
+  box-shadow:
+    0 0 14px rgba(180, 120, 255, 0.12),
+    inset 0 0 8px rgba(180, 120, 255, 0.05);
 }
 
 /* ===== СИНЯЯ ТЕМА ===== */
 #taskHistoryPanel.theme-blue {
-  background: linear-gradient(
-    135deg,
-    rgba(0,20,60,0.7),
-    rgba(20,50,100,0.75),
-    rgba(30,80,130,0.7)
-  );
-  color: #e6f0ff;
+  background: rgba(120, 180, 255, 0.07);
+  box-shadow:
+    0 0 14px rgba(120, 180, 255, 0.12),
+    inset 0 0 8px rgba(120, 180, 255, 0.05);
 }
 
 /* ===== СЕРАЯ ТЕМА ===== */
 #taskHistoryPanel.theme-gray {
-  background: linear-gradient(
-    135deg,
-    rgba(40,40,40,0.7),
-    rgba(70,70,70,0.75),
-    rgba(90,90,90,0.7)
-  );
-  color: #f0f0f0;
+  background: rgba(180, 180, 180, 0.06);
+  box-shadow:
+    0 0 12px rgba(200, 200, 200, 0.10),
+    inset 0 0 8px rgba(200, 200, 200, 0.04);
 }
 
 /* ===== ЧЁРНАЯ ТЕМА ===== */
@@ -776,14 +790,434 @@ canvas {
   content: ' ▼';
 }
 
+/* ===== ЛЕВАЯ ПАНЕЛЬ: ПЛАН НА НЕДЕЛЮ ===== */
+
+#planned-tasks-panel {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translate(-100%, -50%);
+
+  width: 320px;
+  height: 66vh;
+
+  display: flex;
+  flex-direction: column;
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  /* ⛔ фон убран — теперь он ТОЛЬКО в темах */
+  background: transparent;
+
+  color: #ccffcc;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+
+  border-right: 2px solid rgba(180,255,180,0.15);
+  border-radius: 0 18px 18px 0;
+
+  box-shadow:
+    0 0 12px rgba(120,255,160,0.12),
+    inset 0 0 6px rgba(180,255,180,0.05);
+
+  z-index: 50;
+  transition: transform 0.25s ease;
+
+  overflow: hidden;
+}
+
+/* панель открыта */
+#planned-tasks-panel.visible {
+  transform: translate(0, -50%);
+}
+
+/* ===== ТЕМЫ ЛЕВОЙ ПАНЕЛИ ===== */
+
+/* ЗЕЛЁНАЯ — ОСНОВНАЯ (ТВОЙ СТАРЫЙ ГРАДИЕНТ) */
+#planned-tasks-panel.theme-green {
+  background: linear-gradient(
+    135deg,
+    rgba(0,30,0,0.7),
+    rgba(0,50,20,0.75),
+    rgba(10,60,10,0.7)
+  );
+}
+
+/* ЖЁЛТАЯ */
+#planned-tasks-panel.theme-yellow {
+  background: rgba(255, 255, 120, 0.18);
+}
+
+/* ФИОЛЕТОВАЯ */
+#planned-tasks-panel.theme-purple {
+  background: rgba(180, 120, 255, 0.18);
+}
+
+/* СИНЯЯ */
+#planned-tasks-panel.theme-blue {
+  background: rgba(120, 180, 255, 0.18);
+}
+
+/* СЕРАЯ */
+#planned-tasks-panel.theme-gray {
+  background: rgba(180, 180, 180, 0.16);
+}
+
+/* ЧЁРНАЯ */
+#planned-tasks-panel.theme-black {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+/* ===== ВНУТРЕННИЙ СКРОЛЛ-КОНТЕЙНЕР ===== */
+
+#planned-tasks-content {
+  flex: 1;
+  overflow-y: auto;
+
+  padding: 14px 16px 14px 45px;
+
+  direction: rtl;
+}
+
+#planned-tasks-content > * {
+  direction: ltr;
+}
+
+/* ===== ЗАГОЛОВОК ===== */
+
+#planned-tasks-panel .panel-header {
+  padding: 5px 5px 5px 55px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ===== ФИЛЬТРЫ ===== */
+
+.planned-filters {
+  padding: 10px 16px 10px 20px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.planned-filters button {
+  padding: 4px 10px;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+
+  cursor: pointer;
+  user-select: none;
+
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.65);
+
+  border: none;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.planned-filters button:hover {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+}
+
+.planned-filters button.active {
+  background: rgba(255,255,255,0.22);
+  color: #ffffff;
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.18),
+    inset 0 0 6px rgba(255,255,255,0.12);
+}
+
+/* ===== ДЕНЬ ===== */
+
+.planned-day {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.planned-day-header {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  opacity: 0.85;
+}
+
+/* ===== СПИСОК ===== */
+
+.planned-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.planned-item {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.planned-time {
+  font-size: 11px;
+  opacity: 0.55;
+  min-width: 70px;
+}
+
+.planned-empty {
+  font-size: 11px;
+  opacity: 0.4;
+  font-style: italic;
+}
+
+/* ===== СКРОЛЛ ===== */
+
+#planned-tasks-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+#planned-tasks-content::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+
+#planned-tasks-content::-webkit-scrollbar-thumb {
+  background: rgba(120,255,160,0.35);
+  border-radius: 4px;
+}
+
+#planned-tasks-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(120,255,160,0.6);
+}
+
+  
+/* ===== КАСТОМНЫЙ СКРОЛЛ: ПРАВАЯ ПАНЕЛЬ ===== */
+
+#taskHistoryList::-webkit-scrollbar {
+  width: 8px;
+}
+
+#taskHistoryList::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+}
+
+#taskHistoryList::-webkit-scrollbar-thumb {
+  background: rgba(120,255,160,0.35);
+  border-radius: 4px;
+}
+
+#taskHistoryList::-webkit-scrollbar-thumb:hover {
+  background: rgba(120,255,160,0.6);
+}
+
+ #planned-tasks-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+#planned-tasks-content {
+  flex: 1;
+}
+
+.panel-button-row {
+  margin-top: auto;
+}
   
   
+  
+#planned-tasks-panel.theme-green {
+  background: rgba(0, 255, 150, 0.08);
+}
+
+#planned-tasks-panel.theme-yellow {
+  background: rgba(255, 255, 120, 0.08);
+}
+
+  
+/* ============================
+   PRINT STYLES — FINAL
+   ============================ */
+@media print {
+
+  /* ===== СТРАНИЦА ===== */
+  @page {
+    size: A4 landscape;
+    margin: 8mm 10mm 10mm 10mm; /* минимальный отступ, особенно сверху */
+  }
+
+  /* ===== УБИРАЕМ ВСЁ ===== */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* ===== ПОКАЗЫВАЕМ ТОЛЬКО ЛЕВУЮ ПАНЕЛЬ ===== */
+  #planned-tasks-panel,
+  #planned-tasks-panel * {
+    visibility: visible !important;
+  }
+
+  /* ===== ПАНЕЛЬ КАК ПЕЧАТНЫЙ ДОКУМЕНТ ===== */
+  #planned-tasks-panel {
+    position: static !important;
+    transform: none !important;
+
+    width: 100% !important;
+    height: auto !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    background: #ffffff !important;
+    color: #000000 !important;
+
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-size: 10pt;
+    line-height: 1.28;
+  }
+
+  /* ===== ЗАГОЛОВОК ===== */
+  #planned-tasks-panel .panel-header {
+    font-size: 15pt;
+    font-weight: 700;
+
+    margin: 0 0 10px 0;
+    padding: 0 0 4px 0;
+
+    border-bottom: 2px solid #000;
+    break-after: avoid;
+  }
+
+  /* ===== КОНТЕНТ ===== */
+  #planned-tasks-content {
+    padding: 0 !important;
+    margin: 0 !important;
+
+    overflow: visible !important;
+    direction: ltr !important;
+
+    column-count: 3;
+    column-gap: 14mm;
+  }
+
+  /* ===== ДНИ ===== */
+  .planned-day {
+    break-inside: avoid;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+
+    border-bottom: 1px solid #ccc;
+  }
+
+  .planned-day-header {
+    font-size: 11pt;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  /* ===== ЗАДАЧИ ===== */
+  .planned-item {
+    font-size: 9.6pt;
+    margin-bottom: 3px;
+  }
+
+  .planned-time {
+    font-size: 9.4pt;
+    font-weight: 600;
+    min-width: 70px;
+  }
+
+  /* ===== УБИРАЕМ ИНТЕРФЕЙС ===== */
+  .planned-filters,
+  .panel-button-row {
+    display: none !important;
+  }
+
+  /* ===== СКРОЛЛЫ ===== */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+}
+
+  
+/* ===== КНОПКА ПЕЧАТИ (ВИЗУАЛ КАК "ВСЕ") ===== */
+
+#plannedPrintBtn {
+  width: 100%;
+  justify-content: center;
+
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+
+  margin-bottom: 6px;
+}
+
+#plannedPrintBtn:hover {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+}
+
+#plannedPrintBtn:active {
+  background: rgba(255,255,255,0.18);
+}
+
+  
+  
+#plannedPrintBtn {
+  padding: 4px 10px;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.65);
+
+  border: none;
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+#plannedPrintBtn:hover {
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+}
+
+#planned-tasks-panel .panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+ 
   
 </style>
 </head>
-<body>
-  
-  
 <body>
 
   <div id="nodeLabels"></div>
@@ -914,6 +1348,10 @@ canvas {
 <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
 <script>
   
+  
+document.body.setAttribute('data-title', document.title);
+  
+  
 const TASK_HISTORY_KEY = 'taskHistory';
   
   
@@ -1040,8 +1478,6 @@ let taskHistoryVisible = false;
   if (taskHistoryVisible) {
     loadTaskHistory(); // 👈 ВОТ ЭТА СТРОКА
   }
-
-  panel.style.right = taskHistoryVisible ? '0' : '-320px';
 }
 
   
@@ -1286,16 +1722,20 @@ function addTaskHistory(taskName, nodeName) {
     localStorage.getItem(TASK_HISTORY_KEY) || '[]'
   );
 
-  // 2. Текущее время
+  // 2. Текущие дата и время
   const now = new Date();
-  const time = now.toLocaleTimeString([], {
+
+  const time = now.toLocaleTimeString('ru-RU', {
     hour: '2-digit',
     minute: '2-digit'
   });
 
+  const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
+
   // 3. Добавляем новую запись в начало
   history.unshift({
-    time: time,
+    date,           // ← НОВОЕ
+    time,
     task: taskName,
     node: nodeName
   });
@@ -1308,13 +1748,13 @@ function addTaskHistory(taskName, nodeName) {
 }
 
 
-  // ===== ВРЕМЕННЫЕ ПЕРИОДЫ ДНЯ =====
+
 const DAY_PERIODS = {
-  morning: { start: 3, end: 9 },
-  day:     { start: 9, end: 15 },
-  evening: { start: 15, end: 21 }
+  'утро':   { start: 3,  end: 9  },
+  'день':   { start: 9,  end: 15 },
+  'вечер':  { start: 15, end: 21 }
 };
-  
+
   
 
 function normalizeDays(days) {
@@ -1339,32 +1779,63 @@ function normalizeDays(days) {
   
   
   
+  
+  
+  
+  
+  
+function timeToMinutes(time) {
+  if (!time) return 9999;
+
+  if (typeof time === 'string' && time.includes(':')) {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  const map = {
+    'утро': 9 * 60,
+    'день': 14 * 60,
+    'вечер': 19 * 60
+  };
+
+  return map[time] ?? 9999;
+}
+
+  
+ 
+  
+function isCompletedOnDate(task, isoDate) {
+  if (!Array.isArray(task.completedDates)) return false;
+  return task.completedDates.includes(isoDate);
+}
+
+
+  
 function shouldReactivateTask(task, now = new Date()) {
   if (!task.completed) return false;
   if (!['привычка', 'план', 'проект'].includes(task.type)) return false;
-  
-  if (!task.dayTime) return false;
+
+  const time = task.dayTime || task.timeOfDay || task.time;
+  if (!time) return false;
 
   const today = now.toISOString().slice(0, 10);
-
-  // защита от повторного возврата в тот же день
   if (task.lastActivatedDate === today) return false;
 
-  // ===== день недели =====
-  if (Array.isArray(task.weekDays)) {
-    const weekDay = now.getDay(); // 0-вс … 6-сб
-    if (!task.weekDays.includes(weekDay)) return false;
+  // дни недели — через normalizeDays
+  const normalizedDays = normalizeDays(task.days);
+  if (normalizedDays.length > 0) {
+    const weekDay = now.getDay();
+    if (!normalizedDays.includes(weekDay)) return false;
   }
 
-  // ===== период дня =====
-  const period = DAY_PERIODS[task.dayTime];
-  if (!period) return false;
+  // время — через timeToMinutes
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const taskMinutes = timeToMinutes(time);
 
-  const hour = now.getHours();
-
-  // ⏰ за 1 час до старта
-  return hour === period.start - 1;
+  // ⏰ за 60 минут до времени задачи
+  return nowMinutes >= taskMinutes - 60 && nowMinutes < taskMinutes;
 }
+
  
   
 function reactivateTask(task) {
@@ -1393,6 +1864,102 @@ function checkRecurringTasks() {
   });
 }
 
+  
+  
+function getPlannedTasksForNextDays(days = 7, now = new Date()) {
+  const result = [];
+
+  // нормализуем "сегодня" к началу дня
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  for (let offset = 0; offset < days; offset++) {
+    const dayDate = new Date(startOfToday);
+    dayDate.setDate(startOfToday.getDate() + offset);
+
+    const isoDate = dayDate.toISOString().slice(0, 10); // YYYY-MM-DD
+    const weekDay = dayDate.getDay(); // 0–6 (вс–сб)
+
+    const dayEntry = {
+      date: isoDate,
+      dayOffset: offset,
+      weekDay,
+      items: []
+    };
+
+    // DEBUG: узлы
+    //console.log('NODES DEBUG', nodes);
+
+    nodes.forEach(node => {
+      (node.tasks || []).forEach(task => {
+
+        // ⛔️ если задача уже выполнена в этот день — пропускаем
+        if (isCompletedOnDate(task, isoDate)) return;
+
+        // нормализация дней
+        const normalized = normalizeDays(task.days);
+
+        // DEBUG: проверка дней
+       /* console.log(
+          'CHECK DAYS',
+          task.name,
+          'raw:', task.days,
+          'normalized:', normalized,
+          'weekDay:', weekDay,
+          'match:', normalized.includes(weekDay)
+        );*/
+
+        // --- ФИЛЬТР 1: есть ли расписание ---
+        const hasDate = !!task.date;
+        const hasWeekDays = normalized.length > 0;
+
+        if (!hasDate && !hasWeekDays) return;
+
+        // --- ФИЛЬТР 2: разовая задача по дате ---
+        if (hasDate && task.date === isoDate) {
+          dayEntry.items.push({
+            taskId: `${node.id}:${task.name}`,
+            title: task.name,
+            type: task.type,
+            time: task.dayTime || task.timeOfDay || null,
+            source: 'date'
+          });
+          return;
+        }
+
+        // --- ФИЛЬТР 3: периодическая ---
+        if (hasWeekDays && normalized.includes(weekDay)) {
+          dayEntry.items.push({
+            taskId: `${node.id}:${task.name}`,
+            title: task.name,
+            type: task.type,
+            time: task.dayTime || task.timeOfDay || null,
+            source: 'weekly'
+          });
+        }
+      });
+    });
+
+    
+    
+    
+    
+// 🔽 СОРТИРОВКА ЗАДАЧ ВНУТРИ ДНЯ ПО ВРЕМЕНИ
+dayEntry.items.sort((a, b) => {
+  return timeToMinutes(a.time) - timeToMinutes(b.time);
+});
+
+// ⬅ добавляем день ПОСЛЕ обработки всех задач
+result.push(dayEntry);
+
+  }
+
+  return result;
+}
+
+  
+  
+  
   
 // ===== DEV ONLY =====
 // setInterval(() => {
@@ -1908,6 +2475,38 @@ function updateMenuFields() {
 let selectedTaskNodeId = null;
   
 
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+let plannedFilter = 'all'; 
+// 'all' | 0 | 1 | 2 | 3 | 4 | 5 | 6
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
 
 // ===== События изменения чекпоинтов и текстов =====
@@ -2718,7 +3317,10 @@ function loadTaskHistory() {
       row.className = 'task-history-item';
 
       row.innerHTML = `
-        <div class="task-history-time">${item.time}</div>
+        <div class="task-history-time">
+  ${formatHistoryDate(item)}
+</div>
+
         <div class="task-history-task">${item.task}</div>
         <div class="task-history-node">${item.node}</div>
       `;
@@ -2726,13 +3328,44 @@ function loadTaskHistory() {
       list.appendChild(row);
     });
 }
+  
+  
+function formatHistoryDate(item) {
+  if (!item.date) return item.time;
+
+  const date = new Date(item.date);
+  if (isNaN(date)) return item.time;
+
+  const datePart = date.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit'
+  });
+
+  return `${datePart} ${item.time}`;
+}
+
 
 
  
 loadNodesState();
 reactivateRecurringTasks();
-loadTaskHistory();
+  
+  
+  
+const PLANNED_THEMES = [
+  'theme-green',
+  'theme-yellow',
+  'theme-purple',
+  'theme-blue',
+  'theme-gray',
+  'theme-black'
+];
 
+const PLANNED_THEME_KEY = 'plannedPanelTheme';
+  
+  
+  
+  
 document.addEventListener('DOMContentLoaded', () => {
   
   
@@ -2751,6 +3384,8 @@ const themes = [
   'theme-gray',
   'theme-black'
 ];
+  
+
 
 const panel = document.getElementById('taskHistoryPanel');
 const toggleThemeBtn = document.getElementById('toggleTheme');
@@ -2764,6 +3399,11 @@ if (panel) {
   panel.classList.add(initialTheme);
   localStorage.setItem('taskHistoryTheme', initialTheme);
 }
+  
+  
+
+
+  
 
 if (toggleThemeBtn && panel) {
   toggleThemeBtn.addEventListener('click', () => {
@@ -2780,8 +3420,168 @@ if (toggleThemeBtn && panel) {
   });
 }
 
+// ===== ЛЕВАЯ ПАНЕЛЬ =====
+const plannedPanel = document.getElementById('planned-tasks-panel');
+const plannedThemeBtn = document.getElementById('plannedThemeToggle');
+const plannedFilters = document.querySelector('.planned-filters');
+const plannedPrintBtn = document.getElementById('plannedPrintBtn');
+ 
+
+
+
+// ===== Кнопка смены темы ЛЕВОЙ панели =====
+if (plannedThemeBtn && plannedPanel) {
+  plannedThemeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();      // ⛔ не даём участвовать в dblclick
+    togglePlannedPanelTheme();
+  });
+}
+
+// ===== Кнопка печати ЛЕВОЙ панели =====
+if (plannedPrintBtn) {
+  plannedPrintBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // не мешаем dblclick логике
+    window.print();
+  });
+}
+
+
+
+// ===== Фильтры ЛЕВОЙ панели (локальный click, НЕ document) =====
+if (plannedFilters) {
+  plannedFilters.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    plannedFilter =
+      btn.dataset.filter === 'all'
+        ? 'all'
+        : Number(btn.dataset.filter);
+
+    // UI: активная кнопка
+    plannedFilters
+      .querySelectorAll('button')
+      .forEach(b => b.classList.remove('active'));
+
+    btn.classList.add('active');
+
+    renderPlannedTasksPanel();
+  });
+}
+
+
+// ===== Открытие панелей по dblclick (СТАРОЕ ПОВЕДЕНИЕ) =====
+document.addEventListener('dblclick', (e) => {
+  const screenMiddle = window.innerWidth / 2;
+
+  // ⬅ Левая панель
+  if (e.clientX < screenMiddle) {
+    const wasVisible = plannedPanel.classList.contains('visible');
+    plannedPanel.classList.toggle('visible');
+
+    if (!wasVisible) {
+      renderPlannedTasksPanel();
+    }
+  }
+  // 👉 Правая панель
+  else {
+    const historyPanel = document.getElementById('taskHistoryPanel');
+    historyPanel.classList.toggle('visible');
+  }
+});
+
+  
+function formatDateWithWeekday(dateString) {
+  if (!dateString) return '';
+
+  // формат YYYY-MM-DD
+  const date = new Date(dateString);
+
+  if (isNaN(date)) {
+    return dateString; // fallback
+  }
+
+  return date.toLocaleDateString('ru-RU', {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit'
+  });
+}
+
   
   
+  
+function renderPlannedTasksPanel() {
+  const content = document.getElementById('planned-tasks-content');
+  if (!content) return;
+
+  const days = getPlannedTasksForNextDays(7);
+
+  content.innerHTML = `
+    <div class="planned-days">
+      ${days.map(day => `
+        <div class="planned-day">
+          <div class="planned-day-header">
+            <span class="planned-date">
+  ${formatDateWithWeekday(day.date)}
+</span>
+
+          </div>
+
+          <ul class="planned-items">
+            ${
+              day.items.length === 0
+                ? `<li class="planned-empty">— нет задач —</li>`
+                : day.items.map(item => `
+                    <li class="planned-item">
+                      <span class="planned-time">${item.time ?? 'без времени'}</span>
+                      <span class="planned-title">${item.title}</span>
+                    </li>
+                  `).join('')
+            }
+          </ul>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+
+
+function togglePlannedPanelTheme() {
+  const panel = document.getElementById('planned-tasks-panel');
+  if (!panel) return;
+
+  const currentTheme =
+    PLANNED_THEMES.find(t => panel.classList.contains(t)) ||
+    PLANNED_THEMES[0];
+
+  let index = PLANNED_THEMES.indexOf(currentTheme);
+  index = (index + 1) % PLANNED_THEMES.length;
+  const nextTheme = PLANNED_THEMES[index];
+
+  // 🔎 ДИАГНОСТИКА
+  console.log(
+    'THEME:',
+    nextTheme,
+    'CLASSES BEFORE:',
+    panel.className
+  );
+
+  PLANNED_THEMES.forEach(t => panel.classList.remove(t));
+  panel.classList.add(nextTheme);
+
+  console.log(
+    'CLASSES AFTER:',
+    panel.className
+  );
+
+  localStorage.setItem(PLANNED_THEME_KEY, nextTheme);
+}
+
+
+
+
   
 
   // ===== Удалить последнюю запись (Undo) =====
@@ -3427,6 +4227,8 @@ function updateActiveTab() {
 
   
   
+ 
+
   
  
 </script>
@@ -3474,6 +4276,39 @@ if ('serviceWorker' in navigator) {
 
 </div>
 
+<div id="planned-tasks-panel" class="side-panel left hidden">
+
+  
+
+  <div class="planned-filters">
+    <button class="panel-action-button" id="plannedPrintBtn">
+  Распечатать
+    </button>
+    <div class="panel-header">
+    <h3>План на неделю</h3>
+  </div>
+    <!-- кнопки -->
+  </div>
+
+  <div id="planned-tasks-content"></div>
+  
+  <div class="panel-button-row">
+    
+   
+    
+    <button class="panel-action-button" id="plannedThemeToggle">
+    
+    Сменить тему
+    
+    </button>
+     
+  </div>
+
+
+</div>
+
+ 
+  
   
 </body>
 </html>
