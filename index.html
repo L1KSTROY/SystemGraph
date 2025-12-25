@@ -939,8 +939,8 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // ===== Свет =====
-scene.add(new THREE.AmbientLight(0x444444));
-const pLight = new THREE.PointLight(0xffffff,1);
+scene.add(new THREE.AmbientLight(0xffffff, 0.15));
+const pLight = new THREE.PointLight(0xffffff,0,3);
 pLight.position.set(50,50,50);
 scene.add(pLight);
 
@@ -1050,18 +1050,24 @@ let taskHistoryVisible = false;
 const nodeGeo = new THREE.SphereGeometry(1,32,32);
 function createNode(x,y,status,link,name='Node', id){
     const NODE_RADIUS = 1;
-    const colorMap = {Green:0x00cc44, Yellow:0xffcc00, Red:0xcc2222};
+    const colorMap = {Green:0x00ff88, Yellow:0xffdd33, Red:0xff3333};
+  
+  
+  
     const mat = new THREE.MeshPhysicalMaterial({
         color: colorMap[status],
-        transparent:true,
-        transmission:0.8,
-        roughness:0.05,
-        metalness:0.1,
+        emissive: new THREE.Color(colorMap[status]),
+        emissiveIntensity: 0.99,
+        transparent:false,
+        opacity: 0.88,
+        transmission:0.0,
+        roughness:0.15,
+        metalness:0.01,
         ior:1.5,
-        clearcoat:0.4,
+        clearcoat:0.9,
         clearcoatRoughness:0.1,
         envMap:cubeTexture,
-        envMapIntensity:1.0
+        envMapIntensity: 1.5,
     });
   
     const mesh = new THREE.Mesh(nodeGeo, mat);
@@ -1069,7 +1075,7 @@ function createNode(x,y,status,link,name='Node', id){
     mesh.renderOrder = 12;     // ← КЛЮЧ
     graphGroup.add(mesh);
 
-    const glow = new THREE.PointLight(colorMap[status],0.05,10);
+    const glow = new THREE.PointLight(0xffffff, 0, 1);
     glow.position.copy(mesh.position);
     graphGroup.add(glow);
 
@@ -1079,15 +1085,15 @@ const haloGeo = new THREE.SphereGeometry(1.2, 32, 32);
 const haloMat = new THREE.MeshPhysicalMaterial({
   color: 0xffffff,
   transparent: true,
-  opacity: 0.05,
+  opacity: 0.9,
   roughness: 0.1,
   metalness: 0.1,
-  transmission: 0.3,
+  transmission: 0,
   ior: 1.5,
-  clearcoat: 0.6,
+  clearcoat: 0.1,
   clearcoatRoughness: 0.1,
   envMap: cubeTexture,
-  envMapIntensity: 1.0,
+  envMapIntensity: 0.9,
   side: THREE.DoubleSide
 });
 
@@ -1302,6 +1308,212 @@ function addTaskHistory(taskName, nodeName) {
 }
 
 
+  // ===== ВРЕМЕННЫЕ ПЕРИОДЫ ДНЯ =====
+const DAY_PERIODS = {
+  morning: { start: 3, end: 9 },
+  day:     { start: 9, end: 15 },
+  evening: { start: 15, end: 21 }
+};
+  
+  
+
+function normalizeDays(days) {
+  if (!Array.isArray(days)) return [];
+
+  const map = {
+    'Вс': 0, 'Пн': 1, 'Вт': 2, 'Ср': 3,
+    'Чт': 4, 'Пт': 5, 'Сб': 6
+  };
+
+  return days
+    .map(d => {
+      if (typeof d === 'number') return d;
+      if (typeof d === 'string' && map[d] !== undefined) return map[d];
+      const n = Number(d);
+      return isNaN(n) ? null : n;
+    })
+    .filter(d => d !== null);
+}
+
+  
+  
+  
+  
+function shouldReactivateTask(task, now = new Date()) {
+  if (!task.completed) return false;
+  if (!['привычка', 'план', 'проект'].includes(task.type)) return false;
+  
+  if (!task.dayTime) return false;
+
+  const today = now.toISOString().slice(0, 10);
+
+  // защита от повторного возврата в тот же день
+  if (task.lastActivatedDate === today) return false;
+
+  // ===== день недели =====
+  if (Array.isArray(task.weekDays)) {
+    const weekDay = now.getDay(); // 0-вс … 6-сб
+    if (!task.weekDays.includes(weekDay)) return false;
+  }
+
+  // ===== период дня =====
+  const period = DAY_PERIODS[task.dayTime];
+  if (!period) return false;
+
+  const hour = now.getHours();
+
+  // ⏰ за 1 час до старта
+  return hour === period.start - 1;
+}
+ 
+  
+function reactivateTask(task) {
+  task.completed = false;
+  task.lastActivatedDate = new Date().toISOString().slice(0, 10);
+
+  // 🔔 опционально: отметка в журнале
+  logTaskEvent?.({
+    task: task.name,
+    node: task.node,
+    type: 'reactivated',
+    time: new Date().toLocaleTimeString()
+  });
+}
+
+ 
+function checkRecurringTasks() {
+  const now = new Date();
+
+  nodes.forEach(node => {
+    node.tasks.forEach(task => {
+      if (shouldReactivateTask(task, now)) {
+        reactivateTask(task);
+      }
+    });
+  });
+}
+
+  
+// ===== DEV ONLY =====
+// setInterval(() => {
+//   reactivateRecurringTasks();
+// }, 60 * 1000);
+
+  
+  
+setInterval(() => {
+  checkRecurringTasks();
+}, 60 * 1000);
+
+ 
+  
+ // ===== DEV ONLY =====
+// Ручной инструмент диагностики периодических задач
+// Использовался для проверки данных и edge-case’ов
+// НЕ должен вызываться автоматически 
+  
+function reactivateRecurringTasks(now = new Date()) {
+  const today = now.toDateString();
+
+  nodes.forEach(node => {
+    node.tasks.forEach(task => {
+      if (
+        isMissedActivation(task, now) &&
+        ['привычка', 'план', 'проект'].includes(task.type)
+      ) {
+        task.completed = false;
+        task.lastActivationDate = today;
+
+        console.log('🔁 Реактивирована:', task.name, '→', node.id);
+      }
+    });
+  });
+}
+
+  
+  
+  
+  
+  
+ 
+function reactivateRecurringTasks() {
+  const now = new Date();
+  const today = now.toDateString();
+
+  nodes.forEach(node => {
+    node.tasks.forEach(task => {
+      if (
+        task.completed &&
+        ['привычка', 'план', 'проект'].includes(task.type) &&
+        isMissedActivation(task, now)
+      ) {
+        task.completed = false;
+        task.lastActivationDate = today;
+
+        
+          //logTaskHistory({
+          //task: task.name,
+          //node: node.id,
+          //type: 'reactivated',
+          //time: now.toLocaleString()
+       // });
+      }
+    });
+  });
+}
+
+
+
+
+ 
+setInterval(() => {
+  reactivateRecurringTasks();
+
+  nodes.forEach(node => {
+    updateNodeStatusByTasks(node);
+    applyNodeColor(node);
+  });
+}, 60 * 1000); // раз в минуту — достаточно
+
+
+  
+  // ===== DEV ONLY =====
+// Диагностическая функция для анализа пропущенных активаций
+// НЕ использовать в боевой логике
+// Вызывать ТОЛЬКО вручную из консоли
+  
+function isMissedActivation(task, now = new Date()) {
+  if (!task.dayTime) return false;
+  if (!Array.isArray(task.days)) return false;
+
+  const today = now.toDateString();
+  if (task.lastActivationDate === today) return false;
+
+  const todayIndex = now.getDay();
+  if (!normalizeDays(task.days).includes(todayIndex)) return false;
+
+  const hour = now.getHours();
+
+  const ACTIVATION_HOUR = {
+    утро: 2,
+    день: 8,
+    вечер: 14
+  };
+
+  const targetHour = ACTIVATION_HOUR[task.dayTime];
+  if (targetHour === undefined) return false;
+
+  return hour >= targetHour;
+}
+
+
+
+
+  
+  
+
+  
+  
   
   
   
@@ -1917,9 +2129,35 @@ function animate(time=0){
 // Плавное мерцание внутреннего свечения (emissive)
 const pulse = 0.01 + 0.01 * Math.sin(time * 0.0005 + n.mesh.id); // медленная анимация
             
-      
+/*      
 n.mesh.material.emissiveIntensity = 0.4 + 0.2 * Math.sin(time * 0.008 + n.mesh.id);
+*/
 
+nodes.forEach(n => {
+
+  let baseEmissive = 0.001;
+
+  if (n.status === 'Red') {
+    if (n.urgencyLevel === 3) baseEmissive = 0.008;
+    else if (n.urgencyLevel === 2) baseEmissive = 0.003;
+    else if (n.urgencyLevel === 1) baseEmissive = 0.002;
+    else baseEmissive = 0.005;
+  }
+  else if (n.status === 'Yellow') {
+    baseEmissive = 0.004;
+  }
+
+  // 🔥 пульс ТОЛЬКО добавкой
+  const pulse =
+    (n.urgencyLevel >= 2)
+      ? 0.002 * Math.sin(time * 0.01 + n.mesh.id)
+      : 0;
+
+  n.mesh.material.emissiveIntensity = baseEmissive + pulse;
+});
+
+      
+      
 // Можно слегка менять прозрачность для эффекта стеклянной лампочки
 const baseOpacity = 0.7;
 n.mesh.material.opacity = THREE.MathUtils.lerp(n.mesh.material.opacity, baseOpacity + 0.1 * Math.sin(time * 0.006 + n.mesh.id), 0.05);
@@ -1928,6 +2166,34 @@ n.mesh.material.opacity = THREE.MathUtils.lerp(n.mesh.material.opacity, baseOpac
     // --- Анимация размера ---
     const targetScale = (n.menuActive || n === hoveredNode) ? 1.2 : 1;
     n.mesh.scale.lerp(new THREE.Vector3(targetScale,targetScale,targetScale), 0.1);
+      
+      
+  // ===== ЭМИССИЯ ПО СТАТУСУ + СРОЧНОСТИ =====
+if (n.status === 'Red') {
+
+  if (n.urgencyLevel === 3) {
+    n.mesh.material.emissiveIntensity = 1.2; // 🔴🔥 ≤ 1 час
+  } 
+  else if (n.urgencyLevel === 2) {
+    n.mesh.material.emissiveIntensity = 0.9; // 🔴⏱ ≤ 2 часа
+  } 
+  else if (n.urgencyLevel === 1) {
+    n.mesh.material.emissiveIntensity = 0.6; // 🔴 ≤ 3 часа
+  } 
+  else {
+    n.mesh.material.emissiveIntensity = 0.5;
+  }
+
+} else if (n.status === 'Yellow') {
+  n.mesh.material.emissiveIntensity = 0.3;
+  
+} else {
+  n.mesh.material.emissiveIntensity = 0;
+}
+
+
+
+  // (дальше — scale, halo, glow и т.д.)
 
     // --- HALO ---
 // --- Анимация HALO ---
@@ -2109,6 +2375,7 @@ for(let i=0;i<particles.length;i++){
 particleGeo.attributes.position.needsUpdate = true;
 
 
+
 // ===== Обновление позиции меню =====
 if (currentMenuNode) {
     updateMenuPosition(currentMenuNode, menuDiv);
@@ -2278,25 +2545,37 @@ setInterval(() => {
   
   
 function updateNodeStatusByTasks(node) {
+
+  // ===== нет задач или они некорректны =====
   if (!Array.isArray(node.tasks) || node.tasks.length === 0) {
+    node.urgencyLevel = 0;
     node.status = 'Green';
     return;
   }
 
-  // 🔴 1. Проверка срочных задач (время / встреча)
-  const hasUrgent = node.tasks.some(
-    t => !t.completed && isTaskUrgentNow(t)
+  // ===== расчёт срочности узла (0–3) =====
+  node.urgencyLevel = Math.max(
+    0,
+    ...node.tasks.map(task => {
+      if (task.completed) return 0;
+      const level = getTaskUrgencyLevel(task);
+      return Number.isFinite(level) ? level : 0;
+    })
   );
 
-  if (hasUrgent) {
+  // ===== есть срочная задача =====
+  if (node.urgencyLevel > 0) {
     node.status = 'Red';
     return;
   }
 
-  // 🟡 2. Обычные незавершённые задачи
-  const hasUnfinished = node.tasks.some(t => !t.completed);
+  // ===== есть незавершённые задачи =====
+  const hasUnfinished = node.tasks.some(task => !task.completed);
   node.status = hasUnfinished ? 'Yellow' : 'Green';
 }
+
+
+
 
   
   
@@ -2335,7 +2614,70 @@ function isTaskUrgentNow(task) {
 
 
   
-  
+function getTaskUrgencyLevel(task) {
+  if (task.completed) return 0;
+
+  const now = new Date();
+  const hour = now.getHours();
+
+  // ===== 🔴 ВСТРЕЧА =====
+  if (task.type === 'встреча' && task.meetingTime) {
+    const [h, m] = task.meetingTime.split(':').map(Number);
+
+    const meeting = new Date();
+    meeting.setHours(h, m, 0, 0);
+
+    const diffHours = (meeting - now) / 36e5;
+
+    if (diffHours <= 0) return 0;
+    if (diffHours <= 1) return 3; // 🔥 критично
+    if (diffHours <= 2) return 2;
+    if (diffHours <= 3) return 1;
+  }
+
+// ===== ПЕРИОД ДНЯ (утро / день / вечер) =====
+if (task.dayTime && !task.completed) {
+  const hour = now.getHours();
+
+  if (task.dayTime === 'утро' && hour >= 3 && hour < 9) return 1;
+  if (task.dayTime === 'день' && hour >= 9 && hour < 15) return 1;
+  if (task.dayTime === 'вечер' && hour >= 15 && hour < 21) return 1;
+}
+  return 0;
+}
+
+function normalizeDays(days) {
+  if (!Array.isArray(days)) return [];
+
+  // если уже числа 0–6
+  if (typeof days[0] === 'number') {
+    return days;
+  }
+
+  const map = {
+    'вс': 0,
+    'пн': 1,
+    'вт': 2,
+    'ср': 3,
+    'чт': 4,
+    'пт': 5,
+    'сб': 6
+  };
+
+  return days
+    .map(d => {
+      if (typeof d === 'string') {
+        return map[d.toLowerCase()];
+      }
+      if (d?.value !== undefined) {
+        return d.value; // если { value: 1 }
+      }
+      return null;
+    })
+    .filter(d => d !== null);
+}
+
+
   
   
 
@@ -2352,24 +2694,7 @@ function applyNodeColor(node) {
   }
 }
 
-  
-  
-function debugNode(node) {
-  console.log(
-    node.tasks.map(t => ({
-      name: t.name,
-      urgent: isTaskUrgentNow(t),
-      type: t.type,
-      dayTime: t.dayTime,
-      datetime: t.datetime
-    }))
-  );
-}
- 
-
-
-  
-  
+   
   
 // Загружаем состояние при старте
 
@@ -2405,6 +2730,7 @@ function loadTaskHistory() {
 
  
 loadNodesState();
+reactivateRecurringTasks();
 loadTaskHistory();
 
 document.addEventListener('DOMContentLoaded', () => {
