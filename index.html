@@ -1480,6 +1480,12 @@ let taskHistoryVisible = false;
   }
 }
 
+function toLocalISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
   
   
 // ===== Узлы =====
@@ -1877,7 +1883,7 @@ function getPlannedTasksForNextDays(days = 7, now = new Date()) {
     const dayDate = new Date(startOfToday);
     dayDate.setDate(startOfToday.getDate() + offset);
 
-    const isoDate = dayDate.toISOString().slice(0, 10); // YYYY-MM-DD
+    const isoDate = toLocalISODate(dayDate); // YYYY-MM-DD
     const weekDay = dayDate.getDay(); // 0–6 (вс–сб)
 
     const dayEntry = {
@@ -3273,7 +3279,7 @@ function normalizeDays(days) {
       }
       return null;
     })
-    .filter(d => d !== null);
+    .filter(d => Number.isInteger(d));
 }
 
 
@@ -3491,11 +3497,31 @@ document.addEventListener('dblclick', (e) => {
 });
 
   
+  
+  
+  
+  
+  
+  
+  
+function parseLocalDate(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(y, m - 1, d); // ЛОКАЛЬНАЯ дата
+}
+
+  
+  
+  
+  
+  
+  
+  
+  
 function formatDateWithWeekday(dateString) {
   if (!dateString) return '';
 
   // формат YYYY-MM-DD
-  const date = new Date(dateString);
+  const date = parseLocalDate(dateString);
 
   if (isNaN(date)) {
     return dateString; // fallback
@@ -3508,14 +3534,20 @@ function formatDateWithWeekday(dateString) {
   });
 }
 
-  
+
+ 
   
   
 function renderPlannedTasksPanel() {
   const content = document.getElementById('planned-tasks-content');
   if (!content) return;
 
-  const days = getPlannedTasksForNextDays(7);
+  let days = getPlannedTasksForNextDays(7);
+
+  // 🔽 ПРИМЕНЕНИЕ ФИЛЬТРА
+  if (plannedFilter !== 'all') {
+    days = days.filter(day => day.weekDay === plannedFilter);
+  }
 
   content.innerHTML = `
     <div class="planned-days">
@@ -3523,9 +3555,8 @@ function renderPlannedTasksPanel() {
         <div class="planned-day">
           <div class="planned-day-header">
             <span class="planned-date">
-  ${formatDateWithWeekday(day.date)}
-</span>
-
+              ${formatDateWithWeekday(day.date)}
+            </span>
           </div>
 
           <ul class="planned-items">
