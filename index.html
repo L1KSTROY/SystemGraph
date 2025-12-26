@@ -17,6 +17,30 @@
     width: 200px;
     z-index: 10;
   }
+  
+  
+/* =========================
+   ТРЕКЕР ПРИВЫЧЕК
+   ========================= */
+
+.task-tracker {
+  display: block;
+
+  font-size: 9px !important;
+  line-height: 1.1 !important;
+  letter-spacing: 1px;
+
+  opacity: 0.55;
+
+  margin-top: 3px;      /* ВСЕГДА СНИЗУ */
+  margin-left: 22px;    /* под текст, не под чекбокс */
+
+  user-select: none;
+  pointer-events: none;
+}
+  
+  
+  
 /* Новый стиль меню */
 #nodeMenu {
   position: absolute;
@@ -85,22 +109,26 @@
 /* Главное меню Add Task */
 #addTaskMenu {
   position: absolute;
-  background: linear-gradient(135deg, rgba(0,30,0,0.9), rgba(0,50,20,0.85), rgba(10,60,10,0.9));
   padding: 20px 25px;
   border-radius: 14px;
-  color: #ccffcc;
+
   display: none;
   opacity: 0;
   transform: scale(0.96);
-  transform-origin: top left;
   transition: opacity 0.25s ease, transform 0.25s ease;
+
   font-family: 'Exo 2', sans-serif;
   font-size: 14px;
   line-height: 1.6;
   width: 480px;
-  max-width: 95vw;
-  box-shadow: 0 0 8px rgba(180,255,180,0.12), inset 0 0 3px rgba(180,255,180,0.04);
+
+  /* glass */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(255,255,255,0.18);
 }
+
 
 /* Поля ввода текста и textarea */
 #addTaskMenu input[type="text"],
@@ -226,22 +254,28 @@
 }
 
 
-/* Кнопки сохранения и отмены */
 #addTaskMenu button {
   padding: 6px 12px;
   margin-right: 8px;
   border-radius: 8px;
-  border: none;
-  background: rgba(0,100,0,0.6);
-  color: #d8ffd8;
+
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+
+  color: inherit;
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.2s;
+
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 #addTaskMenu button:hover {
-  background: rgba(0,150,0,0.8);
+  background: rgba(255,255,255,0.16);
 }
+
 
 #meetingTimeGroup {
   display: flex;
@@ -321,7 +355,7 @@
 
 #nodeTasksExtra {
   position: absolute;
-  top: -137px;                         /* ← старт с самого верха */
+  top: -83px;                         /* ← старт с самого верха */
   left: calc(100% + 24px);        /* больше воздуха */
 
   width: 260px;
@@ -330,8 +364,8 @@
 
   display: none;
 
-  background: rgba(15, 35, 20, 0.96);
-  border: 1px solid rgba(120, 255, 160, 0.25);
+  background: transparent;
+  border: 1px solid transparent;
 
   /* убираем скругление слева */
   border-radius: 0 12px 12px 0;
@@ -419,32 +453,184 @@
 #taskNodeSelected {
   padding: 8px 12px;
   border-radius: 8px;
-  background: rgba(0,30,0,0.35);
+
+  background: rgba(40,40,40,0.45);
+  color: inherit;
+
+  border: 1px solid rgba(255,255,255,0.22);
+
   cursor: pointer;
   user-select: none;
-  border: 1px solid rgba(180,255,180,0.25);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-#taskNodeSelected:hover {
-  background: rgba(0,50,0,0.45);
+/* ===== THEME 0 ===== */
+#addTaskMenu.theme-0 #taskNodeSelected {
+  background: rgba(0,40,20,0.55);
+  border-color: rgba(180,255,180,0.28);
 }
+
+/* ===== THEME 1 ===== */
+#addTaskMenu.theme-1 #taskNodeSelected {
+  background: rgba(40,55,80,0.55);
+  border-color: rgba(140,180,255,0.28);
+}
+
+/* ===== THEME 2 ===== */
+#addTaskMenu.theme-2 #taskNodeSelected {
+  background: rgba(60,45,35,0.55);
+  border-color: rgba(220,190,160,0.28);
+}
+
+  #taskNodeSelected:hover {
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.2),
+    inset 0 0 6px rgba(255,255,255,0.08);
+}
+
+
+/* ======================================================
+   ADD TASK — NODE DROPDOWN (единый финальный стиль)
+   ====================================================== */
 
 #taskNodeList {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  z-index: 10;
+  z-index: 30;
 
   display: none;
   max-height: 220px;
   overflow-y: auto;
 
-  background: rgba(10,30,20,0.95);
-  border-radius: 10px;
-  padding: 6px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  padding: 8px;
+
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  background: rgba(40,40,40,0.55); /* fallback стекло */
+
+  box-shadow:
+    0 10px 28px rgba(0,0,0,0.55),
+    inset 0 0 6px rgba(255,255,255,0.04);
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
+
+/* ===== пункты списка ===== */
+
+#taskNodeList .node-item {
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+
+  background: rgba(255,255,255,0.06);
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+#taskNodeList .node-item:hover {
+  background: rgba(255,255,255,0.14);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.15),
+    inset 0 0 6px rgba(255,255,255,0.08);
+}
+
+/* ======================================================
+   THEME 0 — зелёная (как node / extra)
+   ====================================================== */
+
+#addTaskMenu.theme-0 #taskNodeList {
+  background: linear-gradient(
+    135deg,
+    rgba(0,30,0,0.75),
+    rgba(0,50,20,0.82)
+  );
+  color: #ccffcc;
+  border-color: rgba(180,255,180,0.25);
+}
+
+/* ======================================================
+   THEME 1 — холодная синяя
+   ====================================================== */
+
+#addTaskMenu.theme-1 #taskNodeList {
+  background: linear-gradient(
+    135deg,
+    rgba(30,45,70,0.75),
+    rgba(20,30,45,0.85)
+  );
+  color: #d8e9ff;
+  border-color: rgba(140,180,255,0.25);
+}
+
+/* ======================================================
+   THEME 2 — тёплая / нейтральная
+   ====================================================== */
+
+#addTaskMenu.theme-2 #taskNodeList {
+  background: linear-gradient(
+    135deg,
+    rgba(60,40,30,0.75),
+    rgba(40,25,20,0.88)
+  );
+  color: #f2e8d8;
+  border-color: rgba(220,190,160,0.25);
+}
+
+/* ======================================================
+   КАСТОМНЫЙ СКРОЛЛ (единый стиль)
+   ====================================================== */
+
+#taskNodeList::-webkit-scrollbar {
+  width: 8px;
+}
+
+#taskNodeList::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+}
+
+#taskNodeList::-webkit-scrollbar-thumb {
+  background: rgba(180,180,180,0.45);
+  border-radius: 4px;
+}
+
+#addTaskMenu.theme-0 #taskNodeList::-webkit-scrollbar-thumb {
+  background: rgba(120,255,160,0.45);
+}
+
+#addTaskMenu.theme-1 #taskNodeList::-webkit-scrollbar-thumb {
+  background: rgba(140,180,255,0.45);
+}
+
+#addTaskMenu.theme-2 #taskNodeList::-webkit-scrollbar-thumb {
+  background: rgba(220,190,160,0.45);
+}
+
+#taskNodeList::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.65);
+}
+
 
 #taskNodeSelected {
   position: relative;
@@ -1272,6 +1458,321 @@ canvas {
   opacity: 0.7;
 }
 
+.task-history-aggregate {
+  margin-left: 22px;
+  margin-top: 3px;
+  font-size: 12px;      /* было 9 */
+  line-height: 1.2;     /* чуть просторнее */
+  opacity: 0.55;
+  user-select: none;
+  pointer-events: none;
+}
+
+.task-history-aggregate .tracker-dot {
+  font-size: 10px;      /* было 8 */
+  margin-right: 4px;
+}
+
+.task-history-aggregate .tracker-icon {
+  font-size: 10px;      /* было 8 */
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* ================================
+   🔒 Заблокированная привычка
+   ================================ */
+
+.task-habit-locked {
+  opacity: 0.55;
+  pointer-events: auto; /* клики остаются */
+}
+
+.task-habit-locked .task-title {
+  color: #88aa88;
+}
+
+/* 🔒 Иконка замка */
+.task-habit-locked .task-title span:last-child {
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.6;
+}
+
+/* ================================
+   💡 Хинт по наведению (tooltip)
+   ================================ */
+
+.task-habit-locked::after {
+  content: 'Уже выполнено сегодня';
+  position: absolute;
+  left: 50px;
+  top: 100%;
+  margin-top: 4px;
+
+  background: rgba(0, 0, 0, 0.75);
+  color: #ccffcc;
+  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 4px;
+
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 5;
+}
+
+/* показываем только при наведении */
+.task-habit-locked:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+  
+/* ===== NODE UI THEMES ===== */
+
+.node-ui {
+  background: var(--bg);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+/* theme 0 */
+.node-ui.theme-0 {
+  --bg: #0f1a14;
+  --fg: #ccffcc;
+  --border: rgba(110, 255, 179, 0.25);
+}
+
+/* theme 1 */
+.node-ui.theme-1 {
+  --bg: #161616;
+  --fg: #e0e0e0;
+  --border: rgba(255,255,255,0.18);
+}
+
+/* theme 2 */
+.node-ui.theme-2 {
+  --bg: #1c1a14;
+  --fg: #f2e8c9;
+  --border: rgba(242,232,201,0.25);
+}
+ 
+  
+.node-theme-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.5;
+  margin-left: auto
+}
+
+.node-theme-btn:hover {
+  opacity: 0.9;
+}
+  
+
+/* =====================================================
+   NODE MENU — В СТИЛЕ ПРАВОЙ ПАНЕЛИ
+   ===================================================== */
+
+#nodeMenu {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border-radius: 14px;
+  border-left: 2px solid rgba(180,255,180,0.15);
+
+  box-shadow:
+    0 0 12px rgba(120,255,160,0.12),
+    inset 0 0 6px rgba(180,255,180,0.05);
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+/* =====================================================
+   THEME 0 — ЗЕЛЁНАЯ (как правая панель)
+   ===================================================== */
+#nodeMenu.theme-0 {
+  background: linear-gradient(
+    135deg,
+    rgba(0,30,0,0.70),
+    rgba(0,50,20,0.75),
+    rgba(10,60,10,0.70)
+  );
+
+  color: #ccffcc;
+  border-color: rgba(180,255,180,0.15);
+}
+
+/* =====================================================
+   THEME 1 — ХОЛОДНАЯ СИНЯЯ (как blue theme панели)
+   ===================================================== */
+#nodeMenu.theme-1 {
+  background: rgba(120, 180, 255, 0.08);
+
+  color: #d8e9ff;
+
+  box-shadow:
+    0 0 14px rgba(120,180,255,0.14),
+    inset 0 0 8px rgba(120,180,255,0.05);
+
+  border-color: rgba(120,180,255,0.25);
+}
+
+/* =====================================================
+   THEME 2 — ТЁПЛАЯ ПЕСОЧНАЯ / НЕЙТРАЛЬНАЯ
+   ===================================================== */
+#nodeMenu.theme-2 {
+  background: rgba(200, 190, 150, 0.08);
+
+  color: #f2ecd6;
+
+  box-shadow:
+    0 0 14px rgba(220,210,160,0.12),
+    inset 0 0 8px rgba(220,210,160,0.05);
+
+  border-color: rgba(220,210,160,0.22);
+}
+
+  /* =====================================================
+   NODE TASKS EXTRA — СИНХРОНИЗАЦИЯ С ТЕМАМИ NODE MENU
+   ===================================================== */
+
+#nodeTasksExtra {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border-left: 2px solid rgba(180,255,180,0.15);
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+/* =====================================================
+   THEME 0 — ЗЕЛЁНАЯ (как nodeMenu / правая панель)
+   ===================================================== */
+#nodeMenu.theme-0 ~ #nodeTasksWrapper #nodeTasksExtra {
+  background: linear-gradient(
+    135deg,
+    rgba(0,30,0,0.72),
+    rgba(0,50,20,0.78),
+    rgba(10,60,10,0.72)
+  );
+
+  color: #ccffcc;
+
+  border-color: rgba(180,255,180,0.15);
+
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.55),
+    inset 0 0 6px rgba(180,255,180,0.05);
+}
+
+/* =====================================================
+   THEME 1 — ХОЛОДНАЯ СИНЯЯ
+   ===================================================== */
+#nodeMenu.theme-1 ~ #nodeTasksWrapper #nodeTasksExtra {
+  background: rgba(120,180,255,0.10);
+
+  color: #d8e9ff;
+
+  border-color: rgba(120,180,255,0.25);
+
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.55),
+    inset 0 0 8px rgba(120,180,255,0.05);
+}
+
+/* =====================================================
+   THEME 2 — ТЁПЛАЯ ПЕСОЧНАЯ
+   ===================================================== */
+#nodeMenu.theme-2 #nodeTasksExtra
+  background: rgba(200,190,150,0.10);
+
+  color: #f2ecd6;
+
+  border-color: rgba(220,210,160,0.22);
+
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.55),
+    inset 0 0 8px rgba(220,210,160,0.05);
+}
+
+#nodeTasksExtra {
+  /* ===== МАТОВОЕ СТЕКЛО ===== */
+  background: rgba(38, 38, 38, 0.72);
+  backdrop-filter: blur(14px) saturate(115%);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+
+  /* ===== ГРАНИЦА ===== */
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+
+  /* ===== BLOOM / GLOW ===== */
+  box-shadow:
+    /* внешний мягкий bloom */
+    0 0 22px rgba(160, 255, 200, 0.14),
+    0 10px 30px rgba(0, 0, 0, 0.55),
+
+    /* внутреннее свечение */
+    inset 0 0 12px rgba(180, 255, 220, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+
+  /* ===== ТЕКСТ ===== */
+  color: rgba(235, 235, 235, 0.92);
+
+  transition:
+    background 0.25s ease,
+    backdrop-filter 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+  
+  
+  
+/* ===== ADD TASK — THEME 0 ===== */
+#addTaskMenu.theme-0 {
+  background: linear-gradient(
+    135deg,
+    rgba(0,30,0,0.78),
+    rgba(0,50,20,0.82)
+  );
+  color: #ccffcc;
+}
+
+/* ===== ADD TASK — THEME 1 ===== */
+#addTaskMenu.theme-1 {
+  background: rgba(120,180,255,0.14);
+  color: #d8e9ff;
+}
+
+/* ===== ADD TASK — THEME 2 ===== */
+#addTaskMenu.theme-2 {
+  background: rgba(200,190,150,0.14);
+  color: #f2e8d8;
+}
+
+
+.task-link,
+.task-delete {
+  opacity: 0.25;
+  transition: opacity 0.2s ease;
+}
+
+.task-item:hover .task-link,
+.task-item:hover .task-delete {
+  opacity: 0,75;
+}
 
   
 </style>
@@ -1350,6 +1851,10 @@ canvas {
 
   <button onclick="saveTask()">Сохранить</button>
   <button onclick="closeAddTaskMenu()">Отмена</button>
+  <button id="nodeThemeBtn" class="node-menu-btn secondary">
+  Сменить тему
+</button>
+
 </div>
 
 <!-- Меню узла -->
@@ -1872,37 +2377,96 @@ window.addEventListener('mousemove', e=>{
 
   
   
-function addTaskHistory(taskName, nodeName) {
-  // 1. Берём историю из localStorage
+function addTaskHistory(dataOrTaskName, nodeName) {
+  
+  console.log('addTaskHistory called with:', dataOrTaskName);
+
+  
   const history = JSON.parse(
     localStorage.getItem(TASK_HISTORY_KEY) || '[]'
   );
 
-  // 2. Текущие дата и время
   const now = new Date();
 
-  const time = now.toLocaleTimeString('ru-RU', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const baseEntry = {
+    date: now.toISOString().slice(0, 10),
+    time: now.toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  };
 
-  const date = now.toISOString().slice(0, 10); // YYYY-MM-DD
+  let entry;
 
-  // 3. Добавляем новую запись в начало
-  history.unshift({
-    date,           // ← НОВОЕ
-    time,
-    task: taskName,
-    node: nodeName
-  });
+  // 🔁 СТАРЫЙ ВЫЗОВ: addTaskHistory(taskName, nodeName)
+  if (typeof dataOrTaskName === 'string') {
+    entry = {
+      ...baseEntry,
+      task: dataOrTaskName,
+      node: nodeName
+    };
+  }
 
-  // 4. Сохраняем обратно
+  // 🆕 НОВЫЙ ВЫЗОВ: addTaskHistory({ ... })
+  else {
+    entry = {
+      ...baseEntry,
+      taskId: dataOrTaskName.taskId,
+      taskName: dataOrTaskName.taskName,
+      taskType: dataOrTaskName.taskType,
+      duration: dataOrTaskName.duration,
+      node: dataOrTaskName.node
+    };
+  }
+
+  
+  // ⛔ защита от дублей одного сеанса
+const last = history[0];
+
+if (
+  last &&
+  last.taskId &&
+  entry.taskId &&
+  last.taskId === entry.taskId &&
+  last.date === entry.date &&
+  last.time === entry.time
+) {
+  return; // НЕ пишем дубль
+} 
+  
+  
+  history.unshift(entry);
+
   localStorage.setItem(
     TASK_HISTORY_KEY,
     JSON.stringify(history)
   );
 }
 
+function parseDurationToMinutes(value) {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return 0;
+
+  const num = parseInt(value);
+  if (isNaN(num)) return 0;
+
+  if (value.includes('час')) return num * 60;
+  return num; // минуты
+}
+
+function isHabitCompletedToday(taskId) {
+  const history = JSON.parse(
+    localStorage.getItem(TASK_HISTORY_KEY) || '[]'
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  return history.some(
+    h =>
+      h.taskId === taskId &&
+      h.date === today
+  );
+}
 
 
 const DAY_PERIODS = {
@@ -2232,391 +2796,223 @@ function isMissedActivation(task, now = new Date()) {
 
 
 
-  
-  
-
-  
-  
-  
-  
-  
+// =====================================================
+// ОБНОВЛЕНИЕ СПИСКА ЗАДАЧ УЗЛА
+// =====================================================
 function updateNodeTasks(node) {
   const main = document.getElementById('nodeTasksMain');
   const extra = document.getElementById('nodeTasksExtra');
-
-  if (!main || !extra) return;
+  if (!main || !extra || !node) return;
 
   main.innerHTML = '';
   extra.innerHTML = '';
 
   node.tasks.forEach((task, index) => {
 
-    // ===== Чекбокс =====
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = task.completed;
-    checkbox.style.marginRight = '6px';
-
- checkbox.addEventListener('change', () => {
-
-  const wasCompleted = task.completed;
-  task.completed = checkbox.checked;
-
-  // удаляем из списка
-  const index = node.tasks.indexOf(task);
-  if (index !== -1) {
-    node.tasks.splice(index, 1);
-  }
-
-  // если выполнена → вниз, иначе → вверх
-  if (task.completed && !wasCompleted) {
-    addTaskHistory(task.name, node.name);
-    loadTaskHistory(); 
-    node.tasks.push(task);
-  } else {
-    node.tasks.unshift(task);
-  }
-
-  updateNodeStatusByTasks(node);
-  applyNodeColor(node);
-
-  saveNodesState();
-  updateNodeTasks(node);
-});
-
-
-
-    // ===== Контейнер задачи =====
+    // ===== КОНТЕЙНЕР =====
     const taskDiv = document.createElement('div');
+    taskDiv.className = 'task-item';
     taskDiv.style.display = 'flex';
     taskDiv.style.flexDirection = 'column';
     taskDiv.style.marginBottom = '8px';
     taskDiv.style.minHeight = '34px';
 
+    // ===== ЧЕКБОКС =====
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = !!task.completed;
+    checkbox.style.marginRight = '6px';
 
-    // ===== Строка заголовка =====
+    checkbox.addEventListener('change', () => {
+      const wasCompleted = !!task.completed;
+
+      // ===== ПРИВЫЧКА =====
+      if (task.type === 'привычка') {
+        if (!wasCompleted && checkbox.checked) {
+          if (isHabitCompletedToday(task.id)) {
+            checkbox.checked = false;
+            return;
+          }
+
+          task.completed = true;
+
+          addTaskHistory({
+            taskId: task.id,
+            taskName: task.name,
+            taskType: task.type,
+            duration: parseDurationToMinutes(task.duration),
+            node: node.name
+          });
+
+          saveNodesState();
+          loadTaskHistory();
+          updateNodeTasks(node);
+          return;
+        }
+
+        task.completed = false;
+        saveNodesState();
+        updateNodeTasks(node);
+        return;
+      }
+
+      // ===== НЕ ПРИВЫЧКА =====
+      task.completed = checkbox.checked;
+
+      const idx = node.tasks.indexOf(task);
+      if (idx !== -1) node.tasks.splice(idx, 1);
+
+      if (task.completed && !wasCompleted) {
+        node.tasks.push(task);
+      } else {
+        node.tasks.unshift(task);
+      }
+
+      updateNodeStatusByTasks(node);
+      applyNodeColor(node);
+      saveNodesState();
+      updateNodeTasks(node);
+    });
+
+    // ===== ЗАГОЛОВОК =====
     const titleRow = document.createElement('div');
     titleRow.style.display = 'flex';
-    titleRow.style.alignItems = 'flex-start';
-
-    
-    
     titleRow.style.justifyContent = 'space-between';
-    titleRow.style.height = '22px';      // ← фиксированная высота строки
-    titleRow.style.lineHeight = '22px';  // ← фиксируем baseline
-
-
+    titleRow.style.height = '22px';
+    titleRow.style.lineHeight = '22px';
 
     const title = document.createElement('div');
     title.className = 'task-title';
-    title.style.height = '22px';
-    title.style.lineHeight = '22px';
-    title.style.contain = 'layout paint';
-
-
-
-
-const titleSpan = document.createElement('span');
-titleSpan.textContent = task.name;
-
-title.appendChild(titleSpan);
-    
-    let hoverTimer = null;
-let animFrame = null;
-
-title.addEventListener('mouseenter', () => {
-  hoverTimer = setTimeout(() => {
-    const containerWidth = title.clientWidth;
-    const textWidth = titleSpan.scrollWidth;
-
-    if (textWidth <= containerWidth) return;
-
-    let start = null;
-    const distance = textWidth - containerWidth + 10; // запас
-    const duration = 1500; // скорость прокрутки
-
-    function animateScroll(timestamp) {
-      if (!start) start = timestamp;
-      const progress = (timestamp - start) / duration;
-
-      const offset = Math.min(progress, 1) * distance;
-      titleSpan.style.transform = `translate3d(-${offset}px, 0, 0)`;
-
-
-      if (progress < 1) {
-        animFrame = requestAnimationFrame(animateScroll);
-      }
-    }
-
-    animFrame = requestAnimationFrame(animateScroll);
-  }, 900); // ← задержка 2 секунды
-});
-
-title.addEventListener('mouseleave', () => {
-  clearTimeout(hoverTimer);
-  hoverTimer = null;
-
-  if (animFrame) {
-    cancelAnimationFrame(animFrame);
-    animFrame = null;
-  }
-
-  titleSpan.style.transform = 'translateX(0)';
-});
-
-
-    
-    
     title.style.fontSize = '13px';
     title.style.color = '#ccffcc';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = task.name || '';
+    title.appendChild(titleSpan);
+
+    if (task.type === 'привычка' && isHabitCompletedToday(task.id)) {
+      taskDiv.classList.add('task-habit-locked');
+      const lock = document.createElement('span');
+      lock.textContent = ' 🔒';
+      lock.style.opacity = '0.5';
+      title.appendChild(lock);
+    }
 
     if (task.completed) {
       title.style.textDecoration = 'line-through';
       title.style.opacity = '0.5';
     }
 
-    // Левая группа: чекбокс + название
-const leftGroup = document.createElement('div');
-leftGroup.style.display = 'flex';
-leftGroup.style.alignItems = 'center';
+    const leftGroup = document.createElement('div');
+    leftGroup.style.display = 'flex';
+    leftGroup.style.alignItems = 'center';
+    leftGroup.appendChild(checkbox);
+    leftGroup.appendChild(title);
 
-leftGroup.appendChild(checkbox);
-leftGroup.appendChild(title);
+    // ===== ACTIONS (ссылка + удаление) =====
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.alignItems = 'center';
+    actions.style.gap = '6px';
 
-// Кнопка удаления ✕
-const deleteBtn = document.createElement('span');
-deleteBtn.textContent = '✕';
-deleteBtn.style.cursor = 'pointer';
-deleteBtn.style.opacity = '0.15';
-deleteBtn.style.marginLeft = '8px';
-deleteBtn.style.fontSize = '12px';
+    // 🔗 ссылка
+    const linkBtn = document.createElement('span');
+    linkBtn.className = 'task-link';
+    linkBtn.textContent = '🔗';
+    linkBtn.title = 'Открыть в Obsidian';
+    linkBtn.style.cursor = 'pointer';
 
-deleteBtn.addEventListener('mouseenter', () => {
-  deleteBtn.style.opacity = '0.45';
-});
-deleteBtn.addEventListener('mouseleave', () => {
-  deleteBtn.style.opacity = '0.15';
-});
+    linkBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (task.link) {
+        window.open(task.link, '_blank');
+      }
+    });
 
-let deleteTimer = null;
+    // ❌ удаление
+    const deleteBtn = document.createElement('span');
+    deleteBtn.className = 'task-delete';
+    deleteBtn.textContent = '✕';
+    deleteBtn.title = 'Удалить задачу';
+    deleteBtn.style.cursor = 'pointer';
 
-deleteBtn.addEventListener('mousedown', () => {
-  // запускаем таймер удержания
-  deleteTimer = setTimeout(() => {
-    // мягкая анимация удаления
-    taskDiv.style.opacity = '0';
-    taskDiv.style.transform = 'translateX(10px)';
-    taskDiv.style.height = '0';
-    taskDiv.style.marginBottom = '0';
-
-    // удаляем из данных после анимации
-    setTimeout(() => {
-      const index = node.tasks.indexOf(task);
-      if (index !== -1) {
-        node.tasks.splice(index, 1);
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = node.tasks.indexOf(task);
+      if (idx !== -1) {
+        node.tasks.splice(idx, 1);
         saveNodesState();
         updateNodeTasks(node);
       }
-    }, 250);
+    });
 
-  }, 3000); // 3 секунды удержания
-});
-
-deleteBtn.addEventListener('mouseup', () => {
-  clearTimeout(deleteTimer);
-  deleteTimer = null;
-});
-
-deleteBtn.addEventListener('mouseleave', () => {
-  clearTimeout(deleteTimer);
-  deleteTimer = null;
-});
-    
-
-// ===== ИКОНКА ССЫЛКИ 🔗 =====
-const linkIcon = document.createElement('span');
-
-linkIcon.textContent = '🔗';
-linkIcon.style.cursor = 'pointer';
-linkIcon.style.marginLeft = '6px';
-linkIcon.style.fontSize = '13px';
-linkIcon.style.userSelect = 'none';
-linkIcon.style.opacity = task.link ? '0.4' : '0.12';
-
-linkIcon.addEventListener('mouseenter', () => {
-  linkIcon.style.opacity = task.link ? '0.6' : '0.3';
-});
-
-linkIcon.addEventListener('mouseleave', () => {
-  linkIcon.style.opacity = task.link ? '0.4' : '0.12';
-});
-
-let linkPressTimer = null;
-let isEditingLink = false;
-let longPressTriggered = false;
-
-// ===== LONG PRESS =====
-linkIcon.addEventListener('mousedown', e => {
-  e.stopPropagation();
-  if (isEditingLink) return;
-
-  longPressTriggered = false;
-
-  linkPressTimer = setTimeout(() => {
-    longPressTriggered = true;
-    startEditTaskLink();
-  }, 1200);
-});
-
-linkIcon.addEventListener('mouseup', e => {
-  e.stopPropagation();
-  clearTimeout(linkPressTimer);
-});
-
-linkIcon.addEventListener('mouseleave', () => {
-  clearTimeout(linkPressTimer);
-  longPressTriggered = false;
-});
-
-// ===== CLICK =====
-linkIcon.addEventListener('click', e => {
-  e.stopPropagation();
-
-  if (longPressTriggered) {
-    longPressTriggered = false;
-    return;
-  }
-
-  if (task.link) {
-    window.open(task.link, '_blank');
-  }
-});
-
-// ===== РЕДАКТИРОВАНИЕ ССЫЛКИ =====
-function startEditTaskLink() {
-  if (isEditingLink) return;
-  isEditingLink = true;
-
-  linkIcon.style.display = 'none';
-  rightGroup.style.position = 'relative';
-
-
-  const input = document.createElement('input');
-  
-  input.style.position = 'absolute';
-input.style.right = '0';
-input.style.top = '50%';
-input.style.transform = 'translateY(-50%)';
-
-input.style.width = '160px';
-input.style.fontSize = '12px';
-input.style.zIndex = '10';
-
-  
-  input.type = 'text';
-  input.placeholder = 'obsidian://...';
-  input.value = task.link || '';
-  
-  rightGroup.appendChild(input);
-
-
-  
-  input.focus();
-  input.select();
-
-  function finish(save) {
-    if (save) {
-      const value = input.value.trim();
-      task.link = value || null;
-    }
-
-    saveNodesState();
-
-    input.remove();
-    linkIcon.style.display = '';
-    linkIcon.style.opacity = task.link ? '0.4' : '0.12';
-
-    isEditingLink = false;
-  }
-
-  input.addEventListener('blur', () => finish(true));
-
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') input.blur();
-    if (e.key === 'Escape') finish(false);
-  });
-}
-
-
-
-
-// ФИНАЛЬНАЯ СБОРКА titleRow ⬇⬇⬇
-const rightGroup = document.createElement('div');
-rightGroup.style.display = 'flex';
-rightGroup.style.alignItems = 'center';
-
-rightGroup.appendChild(linkIcon);
-rightGroup.appendChild(deleteBtn);
-
-titleRow.appendChild(leftGroup);
-titleRow.appendChild(rightGroup);
-
+    // ⚠️ ВАЖНО: СНАЧАЛА leftGroup, ПОТОМ actions
+    titleRow.appendChild(leftGroup);
+    actions.appendChild(linkBtn);
+    actions.appendChild(deleteBtn);
+    titleRow.appendChild(actions);
 
     taskDiv.appendChild(titleRow);
 
-    // ===== Мета-информация (в одну строку) =====
-    const metaParts = [];
-
-    if (task.date) metaParts.push(task.date);
-    if (task.meetingTime) metaParts.push(task.meetingTime);
-    if (task.difficulty) metaParts.push(task.difficulty);
-    if (task.dayTime) metaParts.push(task.dayTime);
-    if (task.days && task.days.length > 0) metaParts.push(task.days.join('·'));
-    if (task.duration) metaParts.push(task.duration);
-
-    if (metaParts.length > 0) {
+    // ===== МЕТА =====
+    if (task.duration) {
       const meta = document.createElement('div');
-      meta.textContent = metaParts.join(' · ');
+      meta.textContent = task.duration;
       meta.style.fontSize = '11px';
       meta.style.opacity = '0.6';
       meta.style.marginLeft = '22px';
       taskDiv.appendChild(meta);
     }
 
-    // ===== Комментарий (отдельной строкой, если нужен) =====
-    if (task.comment) {
-      const comment = document.createElement('div');
-      comment.textContent = task.comment;
-      comment.style.fontSize = '11px';
-      comment.style.opacity = '0.5';
-      comment.style.marginLeft = '22px';
-      taskDiv.appendChild(comment);
-    }
-
-    // ===== РАЗДЕЛЕНИЕ: первые 6 → main, остальные → extra =====
     if (index < 6) {
       main.appendChild(taskDiv);
     } else {
       extra.appendChild(taskDiv);
     }
-
   });
 }
 
 
-  
-// ===== UI меню =====
+// =====================================================
+// ТЕМЫ UI МЕНЮ УЗЛА
+// =====================================================
+const NODE_THEMES = 3;
+const nodeMenu = document.getElementById('nodeMenu');
+
+if (nodeMenu) {
+  const savedTheme = Number(localStorage.getItem('node-ui-theme') || 0);
+  nodeMenu.dataset.theme = savedTheme;
+  nodeMenu.classList.add('node-ui', `theme-${savedTheme}`);
+}
+
+function cycleNodeTheme() {
+  if (!nodeMenu) return;
+
+  const current = Number(nodeMenu.dataset.theme || 0);
+  const next = (current + 1) % NODE_THEMES;
+
+  nodeMenu.classList.remove(`theme-${current}`);
+  nodeMenu.classList.add(`theme-${next}`);
+
+  nodeMenu.dataset.theme = next;
+  localStorage.setItem('node-ui-theme', next);
+}
+
+// =====================================================
+// UI МЕНЮ УЗЛА
+// =====================================================
 const menuDiv = document.getElementById('nodeMenu');
 const nodeNameInput = document.getElementById('nodeNameInput');
 
-// Текущий узел, для которого открыто меню
+// текущий узел
 let currentMenuNode = null;
 
-// ===== Обновление полей меню из данных узла =====
+// обновление полей меню
 function updateMenuFields() {
-    if (!currentMenuNode) return;
+  if (!currentMenuNode || !nodeNameInput) return;
+  nodeNameInput.value = currentMenuNode.name || '';
 
-    nodeNameInput.value = currentMenuNode.name;
+
 
     for (let i = 0; i < 3; i++) {
         const checkbox = document.getElementById('checkpoint' + (i + 1));
@@ -3653,7 +4049,7 @@ function applyNodeColor(node) {
   
 // Загружаем состояние при старте
 
-  
+
 function loadTaskHistory() {
   const list = document.getElementById('taskHistoryList');
   if (!list) return;
@@ -3664,42 +4060,104 @@ function loadTaskHistory() {
     localStorage.getItem(TASK_HISTORY_KEY) || '[]'
   );
 
-  history
+  const filtered = history
     .filter(item =>
       activeHistoryNode === 'ALL' || item.node === activeHistoryNode
     )
-    .forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'task-history-item';
-
-      row.innerHTML = `
-        <div class="task-history-time">
-  ${formatHistoryDate(item)}
-</div>
-
-        <div class="task-history-task">${item.task}</div>
-        <div class="task-history-node">${item.node}</div>
-      `;
-
-      list.appendChild(row);
+    .sort((a, b) => {
+      const da = new Date(`${a.date}T${a.time || '00:00'}`);
+      const db = new Date(`${b.date}T${b.time || '00:00'}`);
+      return db - da; // новые сверху
     });
+
+  const renderedTasks = new Set();
+
+  filtered.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'task-history-item';
+
+    row.innerHTML = `
+      <div class="task-history-time">${formatHistoryDate(item)}</div>
+      <div class="task-history-task">${item.taskName}</div>
+      <div class="task-history-node">${item.node}</div>
+    `;
+
+    list.appendChild(row);
+
+    // 🔽 АГРЕГАТ ТОЛЬКО ПОД САМОЙ НОВОЙ ЗАПИСЬЮ
+    if (
+      (item.taskType === 'привычка' || item.taskType === 'план') &&
+      item.taskId &&
+      !renderedTasks.has(item.taskId)
+    ) {
+      renderedTasks.add(item.taskId);
+
+      const groupItems = filtered.filter(
+        h => h.taskId === item.taskId
+      );
+
+      renderAggregateRow(
+        {
+          taskType: item.taskType,
+          items: groupItems
+        },
+        list
+      );
+    }
+  });
 }
-  
-  
+
+
+
+function renderAggregateRow(group, list) {
+  const totalMinutes = group.items.reduce(
+    (sum, i) => sum + (i.duration || 0),
+    0
+  );
+
+  if (!group.items.length && !totalMinutes) return;
+
+  const row = document.createElement('div');
+  row.className = 'task-history-aggregate';
+
+  let html = '';
+
+  if (group.taskType === 'привычка') {
+    html += `<span class="tracker-dot">●</span>`.repeat(group.items.length);
+  }
+
+  if (totalMinutes > 0) {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    html += `
+      <span class="tracker-time">
+        <span class="tracker-icon">⏱</span>
+        ${h ? h + ' ч ' : ''}${m ? m + ' мин' : ''}
+      </span>
+    `;
+  }
+
+  row.innerHTML = html;
+  list.appendChild(row);
+}
+
+
+
+
+
 function formatHistoryDate(item) {
-  if (!item.date) return item.time;
+  if (!item.date) return item.time || '';
 
   const date = new Date(item.date);
-  if (isNaN(date)) return item.time;
+  if (isNaN(date)) return item.time || '';
 
   const datePart = date.toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit'
   });
 
-  return `${datePart} ${item.time}`;
+  return `${datePart} ${item.time || ''}`;
 }
-
 
 
  
@@ -4413,7 +4871,8 @@ function saveTask() {
   if(!taskName){ alert("Введите название задачи!"); return; }
   if(!node){ alert("Выберите узел!"); return; }
 
-  let taskData = {
+ let taskData = {
+  id: crypto.randomUUID(), // ← ВОТ ЭТА СТРОКА
   name: taskName,
   type: taskType,
   node: node,
@@ -4697,9 +5156,60 @@ function updateActiveTab() {
 }
 
   
-  
+document.addEventListener('DOMContentLoaded', () => {
+  loadTheme();
+
+  document.getElementById('nodeThemeBtn')
+    ?.addEventListener('click', () => {
+      const index = THEMES.indexOf(
+        localStorage.getItem('ui-theme') || THEMES[0]
+      );
+      const next = THEMES[(index + 1) % THEMES.length];
+      applyTheme(next);
+    });
+});
+
+
  
 
+  
+  
+  
+  
+  
+const THEMES = ['theme-0', 'theme-1', 'theme-2'];
+const STORAGE_KEY = 'ui-theme';
+
+function applyTheme(theme) {
+  const targets = [
+    document.getElementById('nodeMenu'),
+    document.getElementById('addTaskMenu'),
+    document.getElementById('nodeTasksExtra')
+  ];
+
+  targets.forEach(el => {
+    if (!el) return;
+    THEMES.forEach(t => el.classList.remove(t));
+    el.classList.add(theme);
+  });
+
+  localStorage.setItem(STORAGE_KEY, theme);
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const theme = THEMES.includes(saved) ? saved : THEMES[0];
+  applyTheme(theme);
+  return theme;
+}
+  
+  
+  
+  
+  
+  
+  
+  
   
  
 </script>
