@@ -946,16 +946,18 @@ canvas {
 /* ===== ДЕНЬ ===== */
 
 .planned-day {
+  margin-left: -15px;   /* ← двигаешь сюда */
   margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .planned-day-header {
-  font-size: 13px;
+  margin-left: -15px;   /* ← двигаешь сюда */
+  font-size: 14px;
   font-weight: 600;
   margin-bottom: 4px;
-  opacity: 0.85;
+  opacity: 0.65;
 }
 
 /* ===== СПИСОК ===== */
@@ -1158,45 +1160,27 @@ canvas {
   }
 }
 
-  
-/* ===== КНОПКА ПЕЧАТИ (ВИЗУАЛ КАК "ВСЕ") ===== */
+/* ===== КНОПКА ПЕЧАТИ ===== */
 
 #plannedPrintBtn {
   width: 100%;
   justify-content: center;
-
   text-align: center;
-  font-weight: 600;
-  letter-spacing: 0.4px;
 
-  margin-bottom: 6px;
-}
-
-#plannedPrintBtn:hover {
-  background: rgba(255,255,255,0.12);
-  color: rgba(255,255,255,0.85);
-}
-
-#plannedPrintBtn:active {
-  background: rgba(255,255,255,0.18);
-}
-
-  
-  
-#plannedPrintBtn {
   padding: 4px 10px;
-  border-radius: 999px;
+  margin-bottom: 6px;
 
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.2px;
 
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.65);
-
+  border-radius: 999px;
   border: none;
   cursor: pointer;
   user-select: none;
+
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.65);
 
   transition:
     background 0.15s ease,
@@ -1209,12 +1193,86 @@ canvas {
   color: rgba(255,255,255,0.85);
 }
 
+#plannedPrintBtn:active {
+  background: rgba(255,255,255,0.18);
+}
+
 #planned-tasks-panel .panel-header {
   display: flex;
   align-items: center;
   gap: 8px;
 }
- 
+
+/* ===== ЗАГОЛОВОК ПЕРИОДА (утро / день / вечер) ===== */
+
+.planned-time-header {
+  margin: 6px 0 2px -15px;   /* сильный сдвиг влево */
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* ===== ЭЛЕМЕНТ ЗАДАЧИ ===== */
+
+.planned-item {
+  position: relative;
+
+  margin: 4px 0;
+  padding: 6px 10px 6px 18px; /* база */
+  margin-left: -10px;        /* задачи тоже левее */
+
+  border-radius: 6px;
+
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* маленькая точка перед обычными задачами */
+
+.planned-item::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+}
+
+/* ===== ВСТРЕЧИ ===== */
+
+.planned-item.is-meeting {
+  margin-top: 6px;
+  padding-left: 10px; /* ближе к краю, но не липнет */
+
+  background: rgba(124,255,107,0.18);
+}
+
+.planned-item.is-meeting::before {
+  display: none; /* у встреч маркера нет */
+}
+
+/* ===== ТЕКСТ ЗАДАЧИ ===== */
+
+.planned-title {
+  display: inline-block;
+  padding-left: 6px; /* 👈 ключевой момент — текст "дышит" */
+  font-weight: 500;
+}
+
+/* ===== БЛОК "БЕЗ ВРЕМЕНИ" ===== */
+
+.planned-time-group:has(.planned-time-header:contains("без времени"))
+.planned-item {
+  opacity: 0.7;
+}
+
+
   
 </style>
 </head>
@@ -1417,6 +1475,68 @@ modelGroup.add(sphereMesh);
 const sphereLight = new THREE.PointLight(0x00ffff,0.2,500);
 modelGroup.add(sphereLight);
 
+  
+  
+// ===== ATMOSPHERE (КОСМИЧЕСКИЕ ОБЛАКА) =====
+const atmosphereGroup = new THREE.Group();
+scene.add(atmosphereGroup);
+
+// Procedural cloud texture
+const size = 128;
+const canvas = document.createElement('canvas');
+canvas.width = canvas.height = size;
+const ctx = canvas.getContext('2d');
+
+const gradient = ctx.createRadialGradient(
+  size/2, size/2, 0,
+  size/2, size/2, size/2
+);
+
+gradient.addColorStop(0, 'rgba(255,255,255,0.9)');
+gradient.addColorStop(0.4, 'rgba(255,255,255,0.3)');
+gradient.addColorStop(1, 'rgba(255,255,255,0)');
+
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, size, size);
+
+const cloudTexture = new THREE.CanvasTexture(canvas);
+
+for (let i = 0; i < 24; i++) {
+
+  const material = new THREE.SpriteMaterial({
+    map: cloudTexture,
+    transparent: true,
+    opacity: 0.02,
+    depthTest: false,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    color: 0x99ccff
+  });
+
+  const sprite = new THREE.Sprite(material);
+
+  const radius = 30 + Math.random() * 20;
+  const theta = Math.random() * Math.PI*2;
+  const phi = Math.random() * Math.PI;
+
+  sprite.position.set(
+    radius * Math.sin(phi)*Math.cos(theta),
+    radius * Math.sin(phi)*Math.sin(theta),
+    radius * Math.cos(phi)
+  );
+
+  const scale = 30 + Math.random() * 35;
+  sprite.scale.set(scale, scale, 1);
+
+  atmosphereGroup.add(sprite);
+}
+
+
+ 
+  
+  
+  
+  
 // ===== Частицы =====
 const particleCount = 150;
 const particles = [];
@@ -1554,6 +1674,36 @@ mesh.renderOrder = 12;
 // привязываем к узлу
 mesh.add(haloMesh);
 haloMesh.position.set(0, 0, 0);
+  
+  
+// === Pulse Ring (ШАГ 1 — без анимации) ===
+const pulseMaterial = new THREE.MeshBasicMaterial({
+  color: 0x88ff88,
+  transparent: true,
+  opacity: 0.15,
+  depthWrite: false,
+  depthTest: false
+});
+
+// используем ТУ ЖЕ геометрию, что и halo
+const pulseRing = new THREE.Mesh(
+  haloGeo.clone(),
+  pulseMaterial
+);
+
+// чуть больше Halo
+pulseRing.scale.multiplyScalar(1.25);
+
+// рендер ПОД halo
+pulseRing.renderOrder = haloMesh.renderOrder - 1;
+
+// добавляем к УЗЛУ (mesh!)
+mesh.add(pulseRing);
+
+// сохраняем ссылку
+mesh.userData.pulseRing = pulseRing;
+  
+  
 
     const driftPhaseX = Math.random()*Math.PI*2;
     const driftPhaseY = Math.random()*Math.PI*2;
@@ -1927,7 +2077,7 @@ function getPlannedTasksForNextDays(days = 7, now = new Date()) {
             taskId: `${node.id}:${task.name}`,
             title: task.name,
             type: task.type,
-            time: task.dayTime || task.timeOfDay || null,
+            time: task.meetingTime ?? task.time ?? task.dayTime ?? task.timeOfDay ?? null,
             source: 'date'
           });
           return;
@@ -1939,7 +2089,7 @@ function getPlannedTasksForNextDays(days = 7, now = new Date()) {
             taskId: `${node.id}:${task.name}`,
             title: task.name,
             type: task.type,
-            time: task.dayTime || task.timeOfDay || null,
+            time: task.meetingTime ?? task.time ?? task.dayTime ?? task.timeOfDay ?? null,
             source: 'weekly'
           });
         }
@@ -2821,8 +2971,143 @@ n.halo.material.opacity = THREE.MathUtils.lerp(
 // 🔑 КЛЮЧ
 n.halo.visible = n.halo.material.opacity > 0.002;
 
+// --- PULSE RING (волна активности задачи) ---
+const ring = n.mesh.userData.pulseRing;
+
+if (ring) {
+
+  const hasActiveTasks = n.tasks?.some(t => !t.completed);
+
+  // ===== нет активных задач — гасим =====
+  if (!hasActiveTasks) {
+    ring.material.opacity = THREE.MathUtils.lerp(
+      ring.material.opacity,
+      0,
+      0.12
+    );
+    ring.visible = ring.material.opacity > 0.01;
+    return;
+  }
+
+  // ===== инициализация =====
+  if (!ring.userData.wave) {
+    ring.userData.wave = { progress: Math.random() };
+  }
+  if (ring.userData.wobblePhase === undefined) {
+    ring.userData.wobblePhase = Math.random() * Math.PI * 2;
+  }
+
+  const wave = ring.userData.wave;
+
+// ===== параметры =====
+let speed = 0.004;
+let maxScale = 1.8;
+
+// мягкое состояние — в 2 раза прозрачнее
+const softOpacity = 0.14;
+const aggressiveOpacity = 0.28;
+
+// коэффициент агрессии 0..1
+let aggression = 0;
+
+let targetColor = new THREE.Color(0x88ffcc);
+
+// 🟠 средняя срочность
+if (n.urgencyLevel === 2) {
+  speed = 0.007;
+  maxScale = 2.4;
+  targetColor.set(0xffaa44);
+  aggression = 0.5;
+}
+
+// 🔴 высокая срочность
+if (n.urgencyLevel === 3) {
+  speed = 0.011;
+  maxScale = 3.0;
+  targetColor.set(0xff4444);
+  aggression = 1.0;
+}
+
+// итоговая прозрачность
+const baseOpacity = THREE.MathUtils.lerp(
+  softOpacity,
+  aggressiveOpacity,
+  aggression
+);
 
 
+  // ===== прогресс волны =====
+  wave.progress += speed;
+  if (wave.progress >= 1) wave.progress = 0;
+
+  const p = wave.progress;
+  const eased = p * p;
+
+  // ===== микро-всплеск =====
+  const burstWindow = 0.14;
+  let burst = 0;
+  let burstOpacity = 0;
+
+  if (p < burstWindow) {
+    const t = p / burstWindow;
+
+    // основной импульс
+    const burst1 = Math.sin(t * Math.PI);
+
+    // 🔴 второе эхо ТОЛЬКО для красных
+    let burst2 = 0;
+    if (n.status === 'Red') {
+      const echoDelay = 0.32;
+      const echoStrength = 0.65;
+
+      if (t > echoDelay) {
+        const tt = (t - echoDelay) / (1 - echoDelay);
+        burst2 = Math.sin(tt * Math.PI) * echoStrength;
+      }
+    }
+
+    burst = burst1 + burst2;
+
+    // мягкая прозрачность всплеска
+    burstOpacity =
+      t < 0.5
+        ? 2 * t * t
+        : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  // ===== масштаб =====
+  const baseScale = 1.15 + eased * maxScale;
+
+  ring.userData.wobblePhase += 0.03;
+  const wobble =
+    Math.sin(ring.userData.wobblePhase) * 0.025 +
+    Math.sin(ring.userData.wobblePhase * 0.7) * 0.015;
+
+  const scale =
+    baseScale *
+    (1 + wobble) *
+    (1 + burst * 0.18);
+
+  ring.scale.set(scale, scale, scale);
+
+  // ===== прозрачность =====
+  const fadeIn  = Math.min(p * 3, 1);
+  const fadeOut = Math.min((1 - p) * 3, 1);
+  const waveOpacity = baseOpacity * Math.min(fadeIn, fadeOut);
+
+  ring.material.opacity =
+    waveOpacity + burstOpacity * 0.12;
+
+  // ===== цвет =====
+  ring.material.color.lerp(targetColor, 0.12);
+
+  ring.visible = ring.material.opacity > 0.01;
+}
+
+
+      
+      
+      
     // --- Glow (оставляем как есть) ---
    const baseIntensity = 0.05;
 const baseDistance = 10;
@@ -3003,6 +3288,11 @@ if (currentMenuNode) {
 }
     renderer.render(scene,camera);
 
+  
+  atmosphereGroup.children.forEach((s, i) => {
+  s.rotation.z += 0.0001 * (i % 2 ? 1 : -1);
+});
+
     
 }
 animate();
@@ -3158,21 +3448,39 @@ function updateNodeStatusByTasks(node) {
     return;
   }
 
-  // ===== расчёт срочности узла (0–3) =====
-  node.urgencyLevel = Math.max(
-    0,
-    ...node.tasks.map(task => {
-      if (task.completed) return 0;
-      const level = getTaskUrgencyLevel(task);
-      return Number.isFinite(level) ? level : 0;
-    })
-  );
+// ===== расчёт срочности узла (0–3) по задачам =====
+node.urgencyLevel = Math.max(
+  0,
+  ...node.tasks.map(task => {
+    if (task.completed) return 0;
+    const level = getTaskUrgencyLevel(task);
+    return Number.isFinite(level) ? level : 0;
+  })
+);
 
-  // ===== есть срочная задача =====
-  if (node.urgencyLevel > 0) {
-    node.status = 'Red';
-    return;
-  }
+// ======================================================
+// 🔥 МНОГО ПРОСТЫХ ЗАДАЧ (без времени и периода)
+// ======================================================
+const simpleTasksCount = node.tasks.filter(task =>
+  !task.completed &&
+  task.type === 'задача' &&
+  !task.meetingTime &&
+  !task.dayTime &&
+  !task.date
+).length;
+
+if (simpleTasksCount >= 5) {
+  node.urgencyLevel = Math.max(node.urgencyLevel, 3);
+}
+
+// ===== статус узла =====
+if (node.urgencyLevel > 0) {
+  node.status = 'Red';
+} else {
+  const hasUnfinished = node.tasks.some(task => !task.completed);
+  node.status = hasUnfinished ? 'Yellow' : 'Green';
+}
+
 
   // ===== есть незавершённые задачи =====
   const hasUnfinished = node.tasks.some(task => !task.completed);
@@ -3223,33 +3531,75 @@ function getTaskUrgencyLevel(task) {
   if (task.completed) return 0;
 
   const now = new Date();
-  const hour = now.getHours();
 
-  // ===== 🔴 ВСТРЕЧА =====
-  if (task.type === 'встреча' && task.meetingTime) {
+  // ======================================================
+  // 🔴 ВСТРЕЧА (ТОЛЬКО В СВОЙ ДЕНЬ)
+  // ======================================================
+  if (task.type === 'встреча' && task.meetingTime && task.date) {
+
+    const meetingDate = new Date(task.date);
     const [h, m] = task.meetingTime.split(':').map(Number);
+    meetingDate.setHours(h, m, 0, 0);
 
-    const meeting = new Date();
-    meeting.setHours(h, m, 0, 0);
+    // ❗ если сегодня НЕ день встречи — никакой пульсации
+    if (meetingDate.toDateString() !== now.toDateString()) {
+      return 0;
+    }
 
-    const diffHours = (meeting - now) / 36e5;
+    const diffHours = (meetingDate - now) / 36e5;
 
     if (diffHours <= 0) return 0;
-    if (diffHours <= 1) return 3; // 🔥 критично
-    if (diffHours <= 2) return 2;
-    if (diffHours <= 3) return 1;
+    if (diffHours <= 2) return 3; // 🔥 агрессивная
+    if (diffHours <= 4) return 2; // ⚠ усиленная
+    if (diffHours <= 6) return 1; // 🌊 мягкая
+
+    return 0;
   }
 
-// ===== ПЕРИОД ДНЯ (утро / день / вечер) =====
-if (task.dayTime && !task.completed) {
-  const hour = now.getHours();
+  // ======================================================
+  // 🟡 ПЕРИОД ДНЯ (привычка / план / проект)
+  // ======================================================
+  if (
+    (task.type === 'привычка' ||
+     task.type === 'план' ||
+     task.type === 'проект') &&
+    task.dayTime
+  ) {
 
-  if (task.dayTime === 'утро' && hour >= 3 && hour < 9) return 1;
-  if (task.dayTime === 'день' && hour >= 9 && hour < 15) return 1;
-  if (task.dayTime === 'вечер' && hour >= 15 && hour < 21) return 1;
-}
+    const hour = now.getHours();
+
+    const periods = {
+      'утро':  { start: 3,  end: 9  },
+      'день':  { start: 9,  end: 15 },
+      'вечер': { start: 15, end: 21 }
+    };
+
+    const p = periods[task.dayTime];
+    if (!p) return 0;
+
+    // вне периода — молчим
+    if (hour < p.start || hour >= p.end) return 0;
+
+    const duration = p.end - p.start;
+    const elapsed = hour - p.start;
+    const remaining = p.end - hour;
+
+    // 🔥 последние 2 часа
+    if (remaining <= 2) return 3;
+
+    // ⚠ середина периода
+    if (elapsed >= duration / 2) return 2;
+
+    // 🌊 начало периода
+    return 1;
+  }
+
+  // ======================================================
+  // ⚪ ПРОЧЕЕ — без срочности
+  // ======================================================
   return 0;
 }
+
 
 function normalizeDays(days) {
   if (!Array.isArray(days)) return [];
@@ -3534,7 +3884,42 @@ function formatDateWithWeekday(dateString) {
   });
 }
 
+  
+  
+  
+  
+function getPeriodByTime(time) {
+  if (!/^\d{2}:\d{2}$/.test(time)) return null;
 
+  const [h, m] = time.split(':').map(Number);
+  const minutes = h * 60 + m;
+
+  for (const [period, range] of Object.entries(DAY_PERIODS)) {
+    const start = range.start * 60;
+    const end = range.end * 60;
+    if (minutes >= start && minutes < end) {
+      return period;
+    }
+  }
+
+  return null;
+}
+  
+ 
+const DAY_PERIODS = {
+  утро:  { start: 3,  end: 9  },
+  день:  { start: 9,  end: 15 },
+  вечер: { start: 15, end: 21 }
+};
+  
+  
+  
+
+const TIME_GROUP_ORDER = [
+  'утро',
+  'день',
+  'вечер'
+];
  
   
   
@@ -3560,17 +3945,72 @@ function renderPlannedTasksPanel() {
           </div>
 
           <ul class="planned-items">
-            ${
-              day.items.length === 0
-                ? `<li class="planned-empty">— нет задач —</li>`
-                : day.items.map(item => `
-                    <li class="planned-item">
-                      <span class="planned-time">${item.time ?? 'без времени'}</span>
-                      <span class="planned-title">${item.title}</span>
-                    </li>
-                  `).join('')
-            }
-          </ul>
+  ${
+    day.items.length === 0
+      ? `<li class="planned-empty">— нет задач —</li>`
+      : (() => {
+    
+        day.items.forEach(item => {
+  console.log('PLANNED ITEM', item.title, item.time);
+});
+
+    
+          const groups = {};
+
+          day.items.forEach(item => {
+            
+            let key = 'без времени';
+
+if (item.time) {
+  const period = getPeriodByTime(item.time);
+  key = period ?? item.time;
+}
+
+            
+            
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(item);
+          });
+
+          return Object.entries(groups)
+  .sort(([a], [b]) => {
+    const ai = TIME_GROUP_ORDER.indexOf(a);
+    const bi = TIME_GROUP_ORDER.indexOf(b);
+
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+
+    if (/^\d{2}:\d{2}$/.test(a) && /^\d{2}:\d{2}$/.test(b)) {
+      return a.localeCompare(b);
+    }
+
+    if (a === 'без времени') return 1;
+    if (b === 'без времени') return -1;
+
+    return 0;
+  })
+  .map(([time, items]) => `
+
+            <li class="planned-time-group">
+              <div class="planned-time-header">${time}</div>
+              <ul>
+                ${items.map(item => `
+                  <li class="planned-item ${/^\d{2}:\d{2}$/.test(item.time) ? 'is-meeting' : ''}">
+                    <span class="planned-title">
+  ${/^\d{2}:\d{2}$/.test(item.time) ? `${item.time} ` : ''}
+  ${item.title}
+</span>
+
+                  </li>
+                `).join('')}
+              </ul>
+            </li>
+          `).join('');
+        })()
+  }
+</ul>
+
         </div>
       `).join('')}
     </div>
