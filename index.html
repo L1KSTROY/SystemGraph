@@ -2093,17 +2093,23 @@ const particlePoints = new THREE.Points(particleGeo, particleMat);
 modelGroup.add(particlePoints);
 
 let taskHistoryVisible = false;
+let taskHistoryDirty = false;
 
-  function toggleTaskHistoryPanel() {
+function toggleTaskHistoryPanel() {
   const panel = document.getElementById('taskHistoryPanel');
   if (!panel) return;
 
   taskHistoryVisible = !taskHistoryVisible;
-    
+
   if (taskHistoryVisible) {
-    loadTaskHistory(); // 👈 ВОТ ЭТА СТРОКА
+    loadTaskHistory();       // первый рендер сразу
+    taskHistoryDirty = false;
   }
 }
+
+  
+
+  
 
 function toLocalISODate(date) {
   const y = date.getFullYear();
@@ -2374,6 +2380,9 @@ window.addEventListener('mousemove', e=>{
         .filter(i => !i.object.userData.isHalo);
     hoveredNode = intersects.length>0 ? nodes.find(n=>n.mesh===intersects[0].object) : null;
 });
+
+   
+  
 
   
   
@@ -2796,6 +2805,18 @@ function isMissedActivation(task, now = new Date()) {
 
 
 
+
+  
+ function formatTimeToStart(task) {
+  if (!task.startAt) return '';
+
+  const diffMs = task.startAt - Date.now();
+  if (diffMs <= 0) return 'уже можно делать';
+
+  const hours = Math.round(diffMs / 36e5);
+  return `через ${hours} ч.`;
+} 
+  
 // =====================================================
 // ОБНОВЛЕНИЕ СПИСКА ЗАДАЧ УЗЛА
 // =====================================================
@@ -2826,7 +2847,7 @@ function updateNodeTasks(node) {
     checkbox.addEventListener('change', () => {
       const wasCompleted = !!task.completed;
 
-      // ===== ПРИВЫЧКА =====
+      // ===== ПРИВЫЧКИ (особая логика) =====
       if (task.type === 'привычка') {
         if (!wasCompleted && checkbox.checked) {
           if (isHabitCompletedToday(task.id)) {
@@ -2856,22 +2877,44 @@ function updateNodeTasks(node) {
         return;
       }
 
-      // ===== НЕ ПРИВЫЧКА =====
-      task.completed = checkbox.checked;
+// ===== ВСЕ ОСТАЛЬНЫЕ ТИПЫ (встречи, задачи, планы и т.д.) =====
+task.completed = checkbox.checked;
 
-      const idx = node.tasks.indexOf(task);
-      if (idx !== -1) node.tasks.splice(idx, 1);
+// убираем задачу из текущей позиции
+const idx = node.tasks.indexOf(task);
+if (idx !== -1) node.tasks.splice(idx, 1);
 
-      if (task.completed && !wasCompleted) {
-        node.tasks.push(task);
-      } else {
-        node.tasks.unshift(task);
-      }
+if (task.completed && !wasCompleted) {
+  // завершили → переносим вниз списка
+  node.tasks.push(task);
 
-      updateNodeStatusByTasks(node);
-      applyNodeColor(node);
-      saveNodesState();
-      updateNodeTasks(node);
+  // записываем в журнал завершённых
+  addTaskHistory({
+    taskId: task.id,
+    taskName: task.name,
+    taskType: task.type,
+    completedAt: Date.now(),
+    node: node.name
+  });
+
+  // ⚡ мгновенно обновляем журнал, если он открыт
+  if (taskHistoryVisible) {
+    loadTaskHistory();
+  }
+
+} else {
+  // сняли галочку → возвращаем вверх списка
+  node.tasks.unshift(task);
+}
+
+// обновляем состояние узла
+updateNodeStatusByTasks(node);
+applyNodeColor(node);
+
+// сохраняем и перерисовываем задачи
+saveNodesState();
+updateNodeTasks(node);
+
     });
 
     // ===== ЗАГОЛОВОК =====
@@ -2909,68 +2952,183 @@ function updateNodeTasks(node) {
     leftGroup.appendChild(checkbox);
     leftGroup.appendChild(title);
 
-    // ===== ACTIONS (ссылка + удаление) =====
+    // ===== ACTIONS =====
     const actions = document.createElement('div');
     actions.style.display = 'flex';
     actions.style.alignItems = 'center';
     actions.style.gap = '6px';
+    actions.style.position = 'relative';
 
-    // 🔗 ссылка
+    // 🔗 ССЫЛКА
     const linkBtn = document.createElement('span');
     linkBtn.className = 'task-link';
     linkBtn.textContent = '🔗';
-    linkBtn.title = 'Открыть в Obsidian';
+    linkBtn.title = 'Obsidian';
     linkBtn.style.cursor = 'pointer';
+
+    let linkEditor = null;
+    let linkTimer = null;
+
+    const closeLinkEditor = () => {
+      if (!linkEditor) return;
+      linkEditor.remove();
+      linkEditor = null;
+    };
+
+    linkBtn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+
+      linkTimer = setTimeout(() => {
+        if (linkEditor) return;
+
+        linkEditor = document.createElement('input');
+        linkEditor.type = 'text';
+        linkEditor.value = task.link || '';
+        linkEditor.placeholder = 'obsidian://...';
+
+        linkEditor.style.position = 'absolute';
+        linkEditor.style.top = '50%';
+        linkEditor.style.left = '100%';
+        linkEditor.style.marginLeft = '6px';
+        linkEditor.style.transform = 'translateY(-50%)';
+        linkEditor.style.width = '260px';
+        linkEditor.style.fontSize = '12px';
+        linkEditor.style.zIndex = '10';
+        linkEditor.style.flex = '0 0 auto';
+        linkEditor.style.whiteSpace = 'nowrap';
+
+        titleRow.appendChild(linkEditor);
+        linkEditor.focus();
+
+        linkEditor.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            task.link = linkEditor.value.trim();
+            saveNodesState();
+            closeLinkEditor();
+          }
+          if (ev.key === 'Escape') closeLinkEditor();
+        });
+
+        linkEditor.addEventListener('blur', closeLinkEditor);
+      }, 600);
+    });
+
+    linkBtn.addEventListener('mouseup', () => clearTimeout(linkTimer));
+    linkBtn.addEventListener('mouseleave', () => clearTimeout(linkTimer));
 
     linkBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (task.link) {
-        window.open(task.link, '_blank');
-      }
+      if (task.link) window.open(task.link, '_blank');
     });
 
-    // ❌ удаление
+    // ❌ УДАЛЕНИЕ
     const deleteBtn = document.createElement('span');
     deleteBtn.className = 'task-delete';
     deleteBtn.textContent = '✕';
     deleteBtn.title = 'Удалить задачу';
     deleteBtn.style.cursor = 'pointer';
 
-    deleteBtn.addEventListener('click', (e) => {
+    let deleteTimer = null;
+
+    deleteBtn.addEventListener('mousedown', (e) => {
       e.stopPropagation();
-      const idx = node.tasks.indexOf(task);
-      if (idx !== -1) {
-        node.tasks.splice(idx, 1);
-        saveNodesState();
-        updateNodeTasks(node);
-      }
+      deleteBtn.style.opacity = '0.5';
+
+      deleteTimer = setTimeout(() => {
+        const idx = node.tasks.indexOf(task);
+        if (idx !== -1) {
+          node.tasks.splice(idx, 1);
+          saveNodesState();
+          updateNodeTasks(node);
+        }
+      }, 3000);
     });
 
-    // ⚠️ ВАЖНО: СНАЧАЛА leftGroup, ПОТОМ actions
+    deleteBtn.addEventListener('mouseup', () => {
+      clearTimeout(deleteTimer);
+      deleteBtn.style.opacity = '1';
+    });
+
+    deleteBtn.addEventListener('mouseleave', () => {
+      clearTimeout(deleteTimer);
+      deleteBtn.style.opacity = '1';
+    });
+
     titleRow.appendChild(leftGroup);
     actions.appendChild(linkBtn);
     actions.appendChild(deleteBtn);
     titleRow.appendChild(actions);
-
     taskDiv.appendChild(titleRow);
 
     // ===== МЕТА =====
-    if (task.duration) {
-      const meta = document.createElement('div');
-      meta.textContent = task.duration;
-      meta.style.fontSize = '11px';
-      meta.style.opacity = '0.6';
-      meta.style.marginLeft = '22px';
-      taskDiv.appendChild(meta);
-    }
+ // ===== МЕТА =====
+const durationText = task.duration || '';
 
-    if (index < 6) {
-      main.appendChild(taskDiv);
-    } else {
-      extra.appendChild(taskDiv);
-    }
+const timeHint = formatTimeToStart(task);
+
+if (task.duration || timeHint) {
+  const meta = document.createElement('div');
+
+  let text = '';
+
+  if (task.duration) {
+    text += task.duration;
+  }
+
+  if (timeHint) {
+    if (text) text += '; ';
+    text += timeHint;
+  }
+
+  meta.textContent = text;
+  meta.style.fontSize = '11px';
+  meta.style.opacity = '0.6';
+  meta.style.marginLeft = '22px';
+
+  taskDiv.appendChild(meta);
+}
+
+
+
+
+    if (index < 6) main.appendChild(taskDiv);
+    else extra.appendChild(taskDiv);
   });
 }
+
+// ===== OVERLAY ВВОД ССЫЛКИ =====
+function openLinkEditor(anchor, task) {
+  const rect = anchor.getBoundingClientRect();
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = task.link || '';
+  input.placeholder = 'obsidian://...';
+
+  input.style.position = 'fixed';
+  input.style.top = `${rect.top - 4}px`;
+  input.style.left = `${rect.right + 6}px`;
+  input.style.width = '260px';
+  input.style.zIndex = '9999';
+  input.style.fontSize = '12px';
+
+  document.body.appendChild(input);
+  input.focus();
+
+  const close = () => input.remove();
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      task.link = input.value.trim();
+      saveNodesState();
+      close();
+    }
+    if (e.key === 'Escape') close();
+  });
+
+  input.addEventListener('blur', close);
+}
+
 
 
 // =====================================================
@@ -4862,67 +5020,123 @@ function showTaskSettings() {
   document.getElementById('meetingSettings').style.display = (taskType==='встреча')?'block':'none';
 }
 
-// Сохранение задачи
+// =====================================================
+// СОХРАНЕНИЕ ЗАДАЧИ
+// =====================================================
 function saveTask() {
   const taskName = document.getElementById('taskName').value;
   const taskType = document.querySelector('input[name="taskType"]:checked')?.value;
-  const node = selectedTaskNodeId;
+  const nodeId = selectedTaskNodeId;
 
-  if(!taskName){ alert("Введите название задачи!"); return; }
-  if(!node){ alert("Выберите узел!"); return; }
+  if (!taskName) {
+    alert("Введите название задачи!");
+    return;
+  }
 
- let taskData = {
-  id: crypto.randomUUID(), // ← ВОТ ЭТА СТРОКА
-  name: taskName,
-  type: taskType,
-  node: node,
-  completed: false,
-  link: null // ⬅ ССЫЛКА НА OBSIDIAN
-};
+  if (!nodeId) {
+    alert("Выберите узел!");
+    return;
+  }
 
+  // ===== БАЗОВАЯ СТРУКТУРА ЗАДАЧИ =====
+  let taskData = {
+    id: crypto.randomUUID(),
+    name: taskName,
+    type: taskType,
+    node: nodeId,
+    completed: false,
+    link: null
+  };
 
-
-  if(taskType==='задача'){
+  // =====================================================
+  // ЗАДАЧА
+  // =====================================================
+  if (taskType === 'задача') {
     taskData.effort = document.querySelector('input[name="effort"]:checked')?.value;
     taskData.time = document.querySelector('input[name="time"]:checked')?.value;
-  } // ===== Определяем сложность задачи =====
-  if(taskType === 'задача'){
-  const effort = taskData.effort === 'требует усилий';
-  const time = taskData.time === 'нужно много времени';
 
-  if(!effort && !time){
-    taskData.difficulty = 'лёгкая';
-  } else if(effort && time){
-    taskData.difficulty = 'сложная';
-  } else {
-    taskData.difficulty = 'средняя';
+    // сложность
+    const effort = taskData.effort === 'требует усилий';
+    const time = taskData.time === 'нужно много времени';
+
+    if (!effort && !time) {
+      taskData.difficulty = 'лёгкая';
+    } else if (effort && time) {
+      taskData.difficulty = 'сложная';
+    } else {
+      taskData.difficulty = 'средняя';
+    }
   }
-}
 
-    else if(taskType==='привычка'||taskType==='план'){
+  // =====================================================
+  // ПРИВЫЧКА / ПЛАН
+  // =====================================================
+  else if (taskType === 'привычка' || taskType === 'план') {
     taskData.dayTime = document.querySelector('input[name="dayTime"]:checked')?.value;
-    taskData.days = Array.from(document.querySelectorAll('input[name="days"]:checked')).map(d=>d.value);
+    taskData.days = Array
+      .from(document.querySelectorAll('input[name="days"]:checked'))
+      .map(d => d.value);
+
     taskData.duration = document.querySelector('input[name="duration"]:checked')?.value;
-      
-  } else if(taskType === 'встреча'){
-  taskData.date = document.getElementById('meetingDate')?.value;
-  taskData.meetingTime = document.getElementById('meetingTime')?.value;
-  taskData.comment = document.getElementById('taskComment')?.value;
-}
 
+    // ===== условное время начала (для UI) =====
+    if (taskData.dayTime) {
+      const now = new Date();
 
-const nodeObj = nodes.find(n => n.id === node);
-if (nodeObj) {
-  // новая задача всегда сверху
-  nodeObj.tasks.unshift(taskData);
-  saveNodesState();
-}
+      const hourMap = {
+        'утро': 9,
+        'день': 13,
+        'вечер': 18,
+        'ночь': 22
+      };
 
-  if(currentMenuNode){
-  updateNodeTasks(currentMenuNode);
-}
+      const h = hourMap[taskData.dayTime];
+      if (h !== undefined) {
+        const start = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+          h, 0, 0
+        );
+
+        taskData.startAt = start.getTime();
+      }
+    }
+  }
+
+  // =====================================================
+  // ВСТРЕЧА
+  // =====================================================
+  else if (taskType === 'встреча') {
+    taskData.date = document.getElementById('meetingDate')?.value;
+    taskData.meetingTime = document.getElementById('meetingTime')?.value;
+    taskData.comment = document.getElementById('taskComment')?.value;
+
+    // ===== точное время начала =====
+    if (taskData.date && taskData.meetingTime) {
+      taskData.startAt = new Date(
+        `${taskData.date}T${taskData.meetingTime}`
+      ).getTime();
+    }
+  }
+
+  // =====================================================
+  // ДОБАВЛЯЕМ ЗАДАЧУ В УЗЕЛ
+  // =====================================================
+  const nodeObj = nodes.find(n => n.id === nodeId);
+  if (nodeObj) {
+    // новая задача всегда сверху
+    nodeObj.tasks.unshift(taskData);
+    saveNodesState();
+  }
+
+  if (currentMenuNode) {
+    updateNodeTasks(currentMenuNode);
+  }
+
   closeAddTaskMenu();
 }
+
 
 // Добавление задачи в меню узла
 function addTaskToNodeMenu(taskName, nodeId){
